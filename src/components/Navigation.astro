@@ -1,6 +1,5 @@
 ---
 import { Image } from "astro:assets";
-import logo from "../images/logo.png";
 import clsx from "clsx";
 
 const { url } = Astro;
@@ -33,8 +32,8 @@ const LINKS = [
   >
     <li class='mr-auto'>
       <a href='/'>
-        <Image
-          src={logo}
+        <img
+          src='/logo.png'
           alt='Ecotecplast Logo'
           class='inset-0 object-cover h-auto w-40'
         />
