@@ -1,0 +1,386 @@
+---
+import Layout from "../layouts/Layout.astro";
+import { Image } from "astro:assets";
+import headerBackground from "../images/header-background.jpg";
+import molecules from "../images/molecules.svg";
+import logAei from "../images/logo-aei.png";
+import logAimplas from "../images/logo-aimplas.png";
+import logAnipac from "../images/logo-anipac.png";
+import logCoparmex from "../images/logo-coparmex.png";
+import pelicula from "../images/pelicula.jpg";
+import purga from "../images/purga.jpg";
+import inyeccion from "../images/inyeccion.jpg";
+import reciclado from "../images/reciclado.jpg";
+import minorTexture from "../images/minor-texture.png";
+import history from "../images/history.png";
+
+const CARDS = [
+  {
+    title: "RECICLADOS",
+    image: reciclado,
+    items: [
+      "Colores 100% Activos",
+      "Modificador de Fluidez",
+      "Antioxidante",
+      "Clarificante para Polipropileno",
+      "Desmoldante",
+      "Modificador de Impacto",
+    ],
+  },
+  {
+    title: "INYECCIÓN",
+    image: inyeccion,
+    items: [
+      "Antibacteriales",
+      "Disipativos",
+      "Conductivos",
+      "Antiestáticos ESD",
+      "Retardantes de flama para construcción",
+      " Colores de Especialidad",
+    ],
+  },
+  {
+    title: "PURGA",
+    image: purga,
+    items: [
+      "Purga PBW Fast Cleany",
+      "Purga PBW",
+      "Strech Film Agricultura",
+      "Termoencogible",
+    ],
+  },
+  {
+    title: "PELÍCULA",
+    image: pelicula,
+    items: ["Empaque", "Bolsa", "Strech Film", "Agricultura", "Termoencogible"],
+  },
+];
+---
+
+<Layout title='Ecotecplast' description='Aditivos 100% activos'>
+  <main class='min-h-screen w-full overflow-x-hidden'>
+    <header
+      class='relative flex items-center justify-center min-h-[650px] w-full'
+    >
+      <Image
+        src={headerBackground}
+        alt='Header Background'
+        class='absolute inset-0 object-cover w-full h-full'
+      />
+      <div class='absolute inset-0 z-10 bg-black/70'></div>
+      <div class='relative flex-1 max-w-7xl m-auto'>
+        <div class='relative z-30 space-y-4 h-96 uppercase'>
+          <h1
+            class='relative text-primary-500 text-7xl font-black text-custom outlined-text-1'
+          >
+            maximizando
+          </h1>
+          <p class='text-white text-6xl uppercase font-light ml-10'>
+            el efecto de los aditivos <br /> 100% activos en
+          </p>
+          <h1
+            class='relative text-primary-500 text-7xl uppercase font-black ml-20 outlined-text-2'
+          >
+            los plasticos
+          </h1>
+        </div>
+      </div>
+    </header>
+    <section class='relative my-8 overflow-hidden' id='about-us'>
+      <Image
+        src={molecules}
+        alt='Additives Options'
+        class='absolute right-0 translate-x-10 top-0 translate-y-1/2 h-auto object-cover w-1/3 -z-10'
+      />
+      <div class='mx-auto max-w-7xl w-full py-10 flex flex-col gap-y-12'>
+        <div class='space-y-4'>
+          <h2 class='text-center text-4xl text-secondary-700 font-black'>
+            Comprometidos con la innovación y desarrollo.
+          </h2>
+          <p
+            class='text-center text-lg text-secondary-600 max-w-4xl mx-auto font-normal'
+          >
+            Somos una empresa enfocada en aditivos 100% activos para el
+            plástico, generando <b>economía circular</b>
+             dentro de nuestros procesos y productos.
+          </p>
+        </div>
+        <div class='grid grid-cols-4 w-full mx-auto gap-4'>
+          {
+            CARDS.map(({ title, items, image }) => (
+              <article class='relative cols-span-1 shadow-xl rounded-lg bg-white flex flex-col overflow-hidden'>
+                <Image
+                  src={image}
+                  alt={title}
+                  class='object-cover w-full h-60 rounded-t-lg'
+                />
+                <div class='bg-primary-800 px-6 py-4 flex-1 -translate-x-0 group-hover'>
+                  <h3 class='text-lg font-bold text-white uppercase'>
+                    {title}
+                  </h3>
+                  <ul class='space-y-4 mt-2'>
+                    {items.map((item) => (
+                      <li class='flex items-center gap-x-2'>
+                        <svg
+                          xmlns='http://www.w3.org/2000/svg'
+                          width='24'
+                          height='24'
+                          viewBox='0 0 24 24'
+                          stroke-width='2'
+                          stroke='currentColor'
+                          fill='none'
+                          stroke-linecap='round'
+                          stroke-linejoin='round'
+                          class='w-6 h-6 text-white/80 min-w-min'
+                        >
+                          <path stroke='none' d='M0 0h24v24H0z' fill='none' />
+                          <path d='M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0' />
+                          <path d='M9 12l2 2l4 -4' />
+                        </svg>
+                        <span class='text-white/80'>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </article>
+            ))
+          }
+        </div>
+        <div class='space-y-4'>
+          <h2 class='text-center text-lg text-secondary-700 font-black'>
+            Con la alianza de las empresas e instituciones más importantes del
+            plástico
+          </h2>
+          <div
+            class='grid grid-cols-2 xl:grid-cols-4 py-6 place-content-center'
+          >
+            <Image
+              src={logAei}
+              alt=''
+              class='my-auto object-contain h-14 w-full grayscale'
+            />
+            <Image
+              src={logAimplas}
+              alt=''
+              class='my-auto object-contain h-10 w-full grayscale'
+            />
+            <Image
+              src={logAnipac}
+              alt=''
+              class='my-auto object-contain h-14 w-full grayscale'
+            />
+            <Image
+              src={logCoparmex}
+              alt=''
+              class='my-auto object-contain h-14 w-full grayscale'
+            />
+          </div>
+        </div>
+      </div>
+    </section>
+    <section class='bg-white relative w-full py-10'>
+      <Image
+        src={molecules}
+        alt='Additives Options'
+        class='absolute left-10 bottom-0 translate-y-1/2 h-auto object-cover w-1/3 z-10'
+      />
+      <div class='w-full max-w-6xl mx-auto'>
+        <div class='relative'>
+          <div class='w-full'>
+            <div class='flex flex-col translate-x-1/4 -ml-10'>
+              <div class='flex gap-x-2 items-baseline'>
+                <Image
+                  src={minorTexture}
+                  alt='Texture'
+                  class='h-auto w-24 translate-y-5'
+                />
+                <span class='text-secondary-600 font-black text-7xl'>2</span>
+                <span class='text-secondary-600 font-black text-8xl'
+                  >8 años</span
+                >
+              </div>
+              <span class='block text-secondary-600 font-black text-6xl -ml-20'>
+                de experiencia</span
+              >
+            </div>
+            <p
+              class='text-secondary-600 font-normal max-w-xl text-xl mt-4 leading-8'
+            >
+              En el sector plástico, innovamos para eficientar los desafíos
+              técnicos, con el enfoque de ayudar al planeta, fomentando el
+              reciclaje, el reúso de productos, la reducción de tiempos y
+              desperdicios, teniendo siempre como objetivo la economía circular
+              desde el suministro de materiales y procesos, hasta el cliente
+              final.
+            </p>
+          </div>
+          <Image
+            src={history}
+            alt='Texture'
+            class='w-1/2 h-auto abolute right-0 absolute top-24'
+          />
+        </div>
+      </div>
+      <div class='pt-48 w-full max-w-7xl mx-auto'>
+        <div
+          class='relative h-[26rem] flex w-full max-w-6xl mx-auto text-secondary-600'
+        >
+          <div class='max-w-xs absolute top-0 left-10 flex'>
+            <div class='flex relative'>
+              <p
+                class='text-primary-500 text-6xl font-black [writing-mode:tb] -rotate-180 outlined-text-3'
+              >
+                2011
+              </p>
+              <ul class='text-lg list-disc ml-4'>
+                <li>Se funda Ecotecplast</li>
+                <li>
+                  Comercialización de masterbatch y maquila de nuestros
+                  aditivos.
+                </li>
+              </ul>
+              <svg
+                xmlns='http://www.w3.org/2000/svg'
+                width='180'
+                height='109'
+                viewBox='0 0 180 109'
+                fill='none'
+                class='absolute bottom-0 left-10 z-10 translate-y-full'
+              >
+                <path
+                  d='M11.0002 0.572998C-4.99975 26.573 -26.9998 174.573 179 72.573'
+                  stroke='black'
+                  stroke-opacity='0.5'
+                  stroke-dasharray='2 2'></path>
+              </svg>
+            </div>
+          </div>
+          <div class='max-w-xs absolute top-48 left-64'>
+            <div class='relative'>
+              <p class='text-primary-500 text-6xl font-black outlined-text-4'>
+                2015
+              </p>
+              <ul class='text-lg list-disc'>
+                <li>Adquirimos nuestra 1er línea de extrusión</li>
+                <li>Fabricación de aditivos en planta propia.</li>
+              </ul>
+              <svg
+                xmlns='http://www.w3.org/2000/svg'
+                width='166'
+                height='131'
+                viewBox='0 0 166 131'
+                fill='none'
+                class='absolute top-0 right-6 z-10 -translate-y-full'
+              >
+                <path
+                  d='M1 130.573C5.0648 35.6502 101 -13.427 165 4.573'
+                  stroke='black'
+                  stroke-opacity='0.5'
+                  stroke-dasharray='2 2'></path>
+              </svg>
+            </div>
+          </div>
+          <div class='max-w-sm absolute top-0 left-2/4'>
+            <div class='relative flex'>
+              <p
+                class='text-primary-500 text-6xl font-black [writing-mode:tb] -rotate-180 outlined-text-5'
+              >
+                2021
+              </p>
+              <ul class='text-lg list-disc ml-4'>
+                <li>Renovamos nuestra imagen</li>
+                <li>Contamos con 8 líneas de extrusión Laboratorio I + D</li>
+                <li>Integramos programas de economía circular.</li>
+              </ul>
+              <svg
+                xmlns='http://www.w3.org/2000/svg'
+                width='216'
+                height='110'
+                viewBox='0 0 216 110'
+                fill='none'
+                class='absolute bottom-0 left-10 z-10 translate-y-full'
+              >
+                <path
+                  d='M1 0.572998C1 0.572998 49 194.573 215 64.573'
+                  stroke='black'
+                  stroke-opacity='0.5'
+                  stroke-dasharray='2 2'></path>
+              </svg>
+            </div>
+          </div>
+          <div class='max-w-xs absolute bottom-0 right-0'>
+            <p
+              class='text-primary-500 text-6xl font-black outlined-text-6 relative'
+            >
+              2022
+            </p>
+            <p class='text-lg'>Desarrollo de nuevas lineas de productos:</p>
+            <ul class='text-lg list-disc ml-4'>
+              <li>E-purge</li>
+              <li>Full Master Color</li>
+              <li>Deslizantes</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+    <section>mision vision</section>
+  </main>
+</Layout>
+
+<style>
+  .outlined-text-1::before {
+    content: "Maximizando";
+    -webkit-text-stroke-width: 1px;
+    -webkit-text-stroke-color: #74bc1f;
+    color: transparent;
+    position: absolute;
+    left: -5px;
+    top: -2px;
+  }
+  .outlined-text-2::before {
+    content: "los plasticos";
+    -webkit-text-stroke-width: 1px;
+    -webkit-text-stroke-color: #74bc1f;
+    color: transparent;
+    position: absolute;
+    left: 5px;
+    top: -2px;
+  }
+  .outlined-text-3::before {
+    content: "2011";
+    -webkit-text-stroke-width: 1px;
+    -webkit-text-stroke-color: #74bc1f;
+    color: transparent;
+    position: absolute;
+    left: -3px;
+    top: -4px;
+  }
+  .outlined-text-4::before {
+    content: "2015";
+    -webkit-text-stroke-width: 1px;
+    -webkit-text-stroke-color: #74bc1f;
+    color: transparent;
+    position: absolute;
+    left: 5px;
+    top: -2px;
+  }
+  .outlined-text-5::before {
+    content: "2021";
+    -webkit-text-stroke-width: 1px;
+    -webkit-text-stroke-color: #74bc1f;
+    color: transparent;
+    position: absolute;
+    left: -3px;
+    top: -4px;
+  }
+  .outlined-text-6::before {
+    content: "2022";
+    -webkit-text-stroke-width: 1px;
+    -webkit-text-stroke-color: #74bc1f;
+    color: transparent;
+    position: absolute;
+    left: -2px;
+    top: 3px;
+  }
+</style>

@@ -1,0 +1,62 @@
+---
+import { Image } from "astro:assets";
+import logo from "../images/logo.png";
+import clsx from "clsx";
+
+const { url } = Astro;
+const path = url.pathname;
+
+const LINKS = [
+  {
+    label: "Acerca de ecotecplast",
+    href: "/#about-us",
+    as: "/",
+  },
+  {
+    label: "aditivos",
+    href: "/aditivos",
+  },
+  {
+    label: "E-Purge",
+    href: "/e-purge",
+  },
+  {
+    label: "full master color",
+    href: "/full-master-color",
+  },
+];
+---
+
+<nav class='bg-secondary-900 sticky top-0 z-50'>
+  <ul
+    class='mx-auto flex flex-row items-center justify-between gap-6 w-full max-w-7xl py-4 px-2'
+  >
+    <li class='mr-auto'>
+      <a href='/'>
+        <Image
+          src={logo}
+          alt='Ecotecplast Logo'
+          class='inset-0 object-cover h-auto w-40'
+        />
+      </a>
+    </li>
+    {
+      LINKS.map(({ label, href, as }) => {
+        const active = path === (as ?? href);
+        return (
+          <li>
+            <a
+              class={clsx("uppercase hover:text-white transition-colors", {
+                "text-white font-bold": active,
+                "text-white/80 font-light": !active,
+              })}
+              href={href}
+            >
+              {label}
+            </a>
+          </li>
+        );
+      })
+    }
+  </ul>
+</nav>
