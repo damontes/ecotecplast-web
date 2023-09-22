@@ -1,0 +1,118 @@
+---
+import { Image } from "astro:assets";
+import Layout from "../layouts/Layout.astro";
+import textureMolecures from "@/images/texture_molecules.svg";
+import molecules from "@/images/molecules.svg";
+import { getCollection } from "astro:content";
+import AdditiveItem from "@/components/AdditiveItem.astro";
+
+const productAdditives = await getCollection("additive-products");
+const processesAdditives = await getCollection("additive-processes");
+---
+
+<Layout title='Aditivos' description='Aditivos 100% activos en pellet'>
+  <main class='min-h-screen relative overflow-hidden'>
+    <Image
+      alt='Moléculas'
+      src={textureMolecures}
+      class='h-full w-auto absolute -right-1/4 top-24 scale-150 opacity-30 aspect-square'
+    />
+    <Image
+      src={molecules}
+      alt='Moleculas'
+      class='absolute left-0 top-24 h-96 w-auto'
+    />
+    <section class='mx-auto max-w-7xl mt-24 py-10 relative space-y-12'>
+      <div class='space-y-4 px-4'>
+        <h1
+          class='relative text-primary-500 text-3xl sm:text-7xl font-black text-custom outlined-text-1 uppercase'
+        >
+          aditivos
+        </h1>
+        <p class='text-center text-secondary-700 text-xl sm:text-2xl'>
+          Todos nuestros aditivos de fabricación son 100% activos en pellet, ya
+          que en su formulación de alta concentración solo contiene ingredientes
+          activos sin plástico.
+        </p>
+      </div>
+      <h2
+        class='text-center text-2xl sm:text-4xl text-secondary-700/80 font-black'
+      >
+        Funcionales para tus <span class='text-secondary-700'>productos</span>
+      </h2>
+      <ul
+        role='list'
+        id='additive-products'
+        class='grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 px-4 sm:gap-x-6 lg:grid-cols-4 xl:gap-x-8'
+      >
+        {
+          productAdditives.map(
+            ({ slug, data: { title, description, cover } }) => (
+              <AdditiveItem
+                slug={`additive-products_${slug}`}
+                title={title}
+                description={description}
+                cover={cover}
+              />
+            )
+          )
+        }
+      </ul>
+      <h2
+        class='text-center text-2xl sm:text-4xl text-secondary-700/80 font-black'
+      >
+        Funcionales para tus <span class='text-secondary-700'>procesos</span>
+      </h2>
+      <ul
+        role='list'
+        id='additive-processes'
+        class='grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 px-4 sm:gap-x-6 lg:grid-cols-4 xl:gap-x-8'
+      >
+        {
+          processesAdditives.map(
+            ({ slug, data: { title, description, cover } }) => (
+              <AdditiveItem
+                slug={`additive-processes_${slug}`}
+                title={title}
+                description={description}
+                cover={cover}
+              />
+            )
+          )
+        }
+      </ul>
+    </section>
+  </main>
+</Layout>
+
+<script>
+  const productList =
+    document
+      .getElementById("additive-products")
+      ?.getElementsByTagName("button") ?? [];
+  const processList =
+    document
+      .getElementById("additive-processes")
+      ?.getElementsByTagName("button") ?? [];
+
+  Array.from([...productList, ...processList]).forEach((element) => {
+    element?.addEventListener("click", async (e) => {
+      const item = (e.target as HTMLElement).closest("li");
+      const slug = item?.getAttribute("data-slug") ?? "";
+
+      const dialog = document.getElementById(slug) as HTMLDialogElement;
+      dialog?.showModal();
+    });
+  });
+</script>
+<style>
+  .outlined-text-1::before {
+    content: "aditivos";
+    -webkit-text-stroke-width: 1px;
+    -webkit-text-stroke-color: #74bc1f;
+    color: transparent;
+    position: absolute;
+    left: -5px;
+    top: -2px;
+  }
+</style>

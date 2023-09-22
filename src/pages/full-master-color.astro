@@ -1,0 +1,183 @@
+---
+import { Image } from "astro:assets";
+import Layout from "@/layouts/Layout.astro";
+import orange from "@/images/colors/orange.jpg";
+import blue from "@/images/colors/blue.jpg";
+import red from "@/images/colors/red.jpg";
+import darkBlue from "@/images/colors/dark-blue.jpg";
+import fluorecenteUno from "@/images/colors/fluorecente-uno.jpg";
+import fluorecenteDos from "@/images/colors/fluorecente-dos.jpg";
+import CheckItem from "@/components/CheckItem.astro";
+
+const FULL_MASTER_COLOR_BENEFITS = [
+  "Alto desempeño",
+  "Intensidad en color",
+  "Mayor brillo",
+  "Buena dispersión",
+];
+const FULL_MASTER_COLOR_APPLICATIONS = [
+  "LDPE",
+  "PP",
+  "HDPE",
+  "PS",
+  "HIPS",
+  "ABS",
+  "SAN",
+  "PET",
+];
+---
+
+<Layout
+  title='Full Master Color'
+  description='Colores 100% activos de alta concentración'
+>
+  <main class='isolate min-h-screen'>
+    <div class='relative isolate -z-10'>
+      <div class='overflow-hidden'>
+        <div
+          class='mx-auto max-w-7xl px-6 pb-32 pt-36 sm:pt-60 lg:px-8 lg:pt-32'
+        >
+          <div
+            class='mx-auto max-w-2xl gap-x-14 lg:mx-0 lg:flex lg:max-w-none lg:items-center'
+          >
+            <div class='w-full max-w-xl lg:shrink-0 xl:max-w-2xl'>
+              <h1
+                class='text-4xl font-bold tracking-tight text-secondary-700 sm:text-6xl'
+              >
+                Full Master Color
+              </h1>
+              <p
+                class='relative mt-6 text-xl leading-8 text-secondary-700 sm:max-w-md lg:max-w-none'
+              >
+                Colores 100% activos de alta concentración, metalizados,
+                fluorecentes y de especialidad (negros, blancos, igualaciones).
+              </p>
+              <h3 class='font-bold text-secondary-700 mt-4 text-xl'>
+                Beneficios
+              </h3>
+              <ul
+                role='list'
+                class='mt-4 grid grid-cols-1 gap-x-8 gap-y-3 text-base leading-7 text-secondary-700 sm:grid-cols-2'
+              >
+                {
+                  FULL_MASTER_COLOR_BENEFITS.map((title) => (
+                    <CheckItem title={title} />
+                  ))
+                }
+              </ul>
+              <h3 class='font-bold text-secondary-700 mt-4 text-xl'>
+                Aplicaciones
+              </h3>
+              <ul
+                role='list'
+                class='mt-4 text-secondary-700 flex flex-wrap gap-4'
+              >
+                {
+                  FULL_MASTER_COLOR_APPLICATIONS.map((title) => (
+                    <li class='bg-secondary-700 text-white py-1 px-5 text-center rounded-full min-w-[80px]'>
+                      {title}
+                    </li>
+                  ))
+                }
+              </ul>
+            </div>
+            <div
+              class='mt-14 flex justify-end gap-8 sm:-mt-44 sm:justify-start sm:pl-20 lg:mt-0 lg:pl-0'
+            >
+              <div
+                class='ml-auto w-44 flex-none space-y-8 pt-32 sm:ml-0 sm:pt-80 lg:order-last lg:pt-36 xl:order-none xl:pt-80'
+              >
+                <div class='relative'>
+                  <Image
+                    src={orange}
+                    alt=''
+                    class='aspect-[2/3] w-full rounded-xl bg-gray-900/5 object-cover shadow-lg'
+                  />
+                  <div
+                    class='pointer-events-none absolute inset-0 rounded-xl ring-1 ring-inset ring-gray-900/10'
+                  >
+                  </div>
+                </div>
+              </div>
+              <div
+                class='mr-auto w-44 flex-none space-y-8 sm:mr-0 sm:pt-52 lg:pt-36'
+              >
+                <div class='relative'>
+                  <Image
+                    src={fluorecenteUno}
+                    alt=''
+                    class='aspect-[2/3] w-full rounded-xl bg-gray-900/5 object-cover shadow-lg'
+                  />
+                  <div
+                    class='pointer-events-none absolute inset-0 rounded-xl ring-1 ring-inset ring-gray-900/10'
+                  >
+                  </div>
+                </div>
+                <div class='relative'>
+                  <Image
+                    src={fluorecenteDos}
+                    alt=''
+                    class='aspect-[2/3] w-full rounded-xl bg-gray-900/5 object-cover shadow-lg'
+                  />
+                  <div
+                    class='pointer-events-none absolute inset-0 rounded-xl ring-1 ring-inset ring-gray-900/10'
+                  >
+                  </div>
+                </div>
+              </div>
+              <div class='w-44 flex-none space-y-8 pt-32 sm:pt-0'>
+                <div class='relative'>
+                  <Image
+                    src={blue}
+                    alt=''
+                    class='aspect-[2/3] w-full rounded-xl bg-gray-900/5 object-cover shadow-lg'
+                  />
+                  <div
+                    class='pointer-events-none absolute inset-0 rounded-xl ring-1 ring-inset ring-gray-900/10'
+                  >
+                  </div>
+                </div>
+                <div class='relative'>
+                  <Image
+                    src={darkBlue}
+                    alt=''
+                    class='aspect-[2/3] w-full rounded-xl bg-gray-900/5 object-cover shadow-lg'
+                  />
+                  <div
+                    class='pointer-events-none absolute inset-0 rounded-xl ring-1 ring-inset ring-gray-900/10'
+                  >
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class='relative isolate -z-10'>
+      <div class='mx-auto max-w-7xl sm:px-6 lg:px-8'>
+        <div
+          class='mx-auto flex max-w-2xl flex-col gap-16 px-6 py-16 sm:rounded-3xl sm:p-8 lg:mx-0 lg:max-w-none lg:flex-row lg:items-center lg:py-20 xl:gap-x-20 xl:px-20'
+        >
+          <Image
+            class='h-96 w-full flex-none rounded-2xl object-cover shadow-xl lg:aspect-square lg:h-auto lg:max-w-sm'
+            src={red}
+            alt=''
+          />
+          <div class='w-full flex-auto'>
+            <h2
+              class='text-3xl font-bold tracking-tight text-secondary-700 sm:text-4xl'
+            >
+              MONOPIGMENTOS
+            </h2>
+            <p class='mt-6 text-lg leading-8 text-secondary-600'>
+              Pigmento peletizado de alta concentración, de un solo tono que se
+              pueden aplicar como base para formular masterbatch, ya que estos
+              pelets son predispersos.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</Layout>

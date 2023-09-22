@@ -1,0 +1,53 @@
+---
+import { Image } from "astro:assets";
+import Dialog from "./Dialog.astro";
+import { getEntry } from "astro:content";
+import ListItem from "./ListItem.astro";
+import List from "./List.astro";
+import Subtitle from "./Subtitle.astro";
+
+const { slug, title, description, cover } = Astro.props;
+
+const [folder, product] = slug.split("_");
+
+const markdown: any = await getEntry(folder, product);
+const { Content } = await markdown.render();
+---
+
+<li
+  id='additive-item'
+  data-slug={slug}
+  class='relative rounded-lg shadow-lg bg-white overflow-hidden z-20'
+>
+  <div class='group aspect-h-7 aspect-w-10 block w-full h-56 bg-gray-100'>
+    {
+      cover && (
+        <Image
+          src={cover}
+          alt={title}
+          width='1080'
+          height='720'
+          class='pointer-events-none object-cover  w-full h-full transition-all group-hover:scale-105'
+        />
+      )
+    }
+    <button type='button' class='absolute inset-0 focus:outline-none'>
+      <span class='sr-only'>View details for {title}</span>
+    </button>
+  </div>
+  <div class='px-4 py-2'>
+    <p
+      class='pointer-events-none mt-2 truncate text-lg font-medium text-gray-900'
+    >
+      {title}
+    </p>
+    <p
+      class='pointer-events-none text-sm font-regular text-gray-500 line-clamp-2'
+    >
+      {description}
+    </p>
+  </div>
+  <Dialog id={slug}>
+    <Content components={{ li: ListItem, ul: List, h3: Subtitle }} />
+  </Dialog>
+</li>

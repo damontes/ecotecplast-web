@@ -1,0 +1,36 @@
+---
+const { id } = Astro.props;
+---
+
+<dialog
+  id={id}
+  class:list={[
+    "bg-white rounded-lg w-full max-w-[95%] sm:max-w-lg backdrop:bg-gray-400/40 backdrop:blur-md animate-fade-down",
+  ]}
+>
+  <slot />
+</dialog>
+
+<script>
+  const dialogs = document.getElementsByTagName("dialog");
+
+  Array.from(dialogs).forEach((dialog) => {
+    dialog?.addEventListener("click", function (event) {
+      const rect = dialog.getBoundingClientRect();
+      const isInDialog =
+        rect.top <= event.clientY &&
+        event.clientY <= rect.top + rect.height &&
+        rect.left <= event.clientX &&
+        event.clientX <= rect.left + rect.width;
+      if (!isInDialog) {
+        dialog.close();
+      }
+    });
+  });
+</script>
+
+<style>
+  dialog::backdrop {
+    backdrop-filter: blur(4px);
+  }
+</style>

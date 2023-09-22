@@ -1,0 +1,182 @@
+---
+import Layout from "@/layouts/Layout.astro";
+import { Image } from "astro:assets";
+import purgaHusillo from "@/images/e-purge/purga-husillo.jpg";
+import purgaColor from "@/images/e-purge/purga-uno.jpg";
+import purga from "@/images/e-purge/purga-dos.jpg";
+import EPurgeBenefitItem from "@/components/EPurgeBenefitItem.astro";
+import molecules from "@/images/molecules.svg";
+
+const E_PURGE_BENEFITS = [
+  {
+    title: "Cambios rápidos",
+    description:
+      "E-purge acelera los cambios de color y material, logrando una mejora del 75% en la velocidad.",
+  },
+  {
+    title: "Sin extracción de husillo",
+    description:
+      " La innovadora fórmula de E-purge permite una limpieza a fondo sin necesidad de desmontar la máquina ni extraer el husillo.",
+  },
+  {
+    title: "Sin contaminación",
+    description:
+      " E-purge es altamente efectivo para eliminar la carbonización, un problema común en la industria del plástico.",
+  },
+  {
+    title: " Adaptable a cambios de temperatura",
+    description:
+      "Este purgante es versátil y se adapta fácilmente a cambios de temperatura.",
+  },
+];
+---
+
+<Layout
+  title='E-Purge'
+  description='Es un compuesto purgante para limpiar máquinas de moldeo termoplásticas utilizadas en diversos procesos de fabricación de plástico, como la inyección, soplado y extrusión.'
+>
+  <section class='w-full max-w-7xl mx-auto min-h-screen mt-24 py-10 px-4'>
+    <Image
+      src={molecules}
+      alt='Moleculas'
+      class='absolute left-1/2 top-1/4 h-96 w-auto'
+    />
+    <h1
+      class='relative text-primary-500 text-3xl sm:text-7xl font-black text-custom outlined-text-1'
+    >
+      E-PURGE
+    </h1>
+    <div class='grid lg:grid-cols-5 mt-4 gap-4'>
+      <div class='col-span-2 flex flex-col items-start gap-y-4'>
+        <p class='text-secondary-700 text-xl leading-7'>
+          Es un compuesto purgante a base de principios químicos y mecánicos,
+          diseñado para limpiar máquinas de moldeo termoplásticas para
+          diferentes procesos; inyección, soplado y extrusión, que se utilizan
+          para la fabricación de plásticos.
+        </p>
+        <a
+          class='rounded-md bg-primary-500 px-4 py-3 text-lg font-semibold text-white shadow-sm hover:bg-primary-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-400'
+          href='https://www.youtube.com/embed/bbo6e9dPupQ'
+          target='_blank'
+        >
+          Conoce más
+        </a>
+      </div>
+      <div class='w-full col-span-3'>
+        <div
+          class='-m-2 rounded-xl bg-gray-900/5 p-2 ring-1 ring-inset ring-gray-900/10 lg:-m-4 lg:rounded-2xl lg:p-4'
+        >
+          <img
+            src='/grafica_e-purge.jpg'
+            alt='App screenshot'
+            width='2432'
+            height='1442'
+            class='rounded-md shadow-2xl ring-1 ring-gray-900/10'
+          />
+        </div>
+      </div>
+    </div>
+
+    <div
+      class='w-full h-[456px] xl:h-[532px] grid mx-auto max-w-6xl sm:grid-cols-7 mt-12 sm:mt-24 rounded-lg overflow-auto gap-3 relative'
+    >
+      <div class='hidden sm:grid col-span-3 grid-rows-3 gap-3'>
+        <div
+          class='row-span-2 left-item bg-primary-500 overflow-hidden relative'
+        >
+          <Image
+            src={purgaHusillo}
+            alt='Purga Husillo'
+            class='object-cover absolute inset-0 aspect-square'
+          />
+        </div>
+        <div class='row-span-1 bg-white max-w-[80%] overflow-hidden relative'>
+          <Image
+            src={purgaColor}
+            alt='Purga'
+            class='object-cover absolute inset-0 aspect-video'
+          />
+        </div>
+      </div>
+      <div
+        class='sm:col-span-4 right-item bg-white rounded-md overflow-hidden flex py-12 px-4 xl:px-16 items-center'
+      >
+        <div class='-translate-y-24 sm:-translate-y-16 relative w-full h-fit'>
+          <h2
+            class='text-5xl text-secondary-700 font-black max-w-xs text-center'
+          >
+            Una limpieza es clave
+          </h2>
+          <p
+            class='lg:absolute text-primary-500 text-2xl font-semibold right-4 top-12 max-w-xs text-right'
+          >
+            para una producción continua
+          </p>
+        </div>
+      </div>
+      <div
+        class='absolute rounded-lg overflow-hidden left-0 sm:left-[35%] w-[70%] h-auto sm:w-[27%] bottom-0'
+      >
+        <Image src={purga} alt='Purga' class='object-contain h-full w-full' />
+      </div>
+    </div>
+    <div class='mx-auto mt-32 max-w-7xl px-6 sm:mt-48 lg:px-8'>
+      <div class='mx-auto max-w-2xl lg:text-center'>
+        <p
+          class='mt-2 text-3xl font-bold tracking-tight text-secondary-700 sm:text-4xl'
+        >
+          Beneficios al usar E-purge
+        </p>
+      </div>
+      <div class='mx-auto mt-16 max-w-2xl sm:mt-20 lg:mt-24 lg:max-w-4xl'>
+        <dl
+          class='grid max-w-xl grid-cols-1 gap-x-8 gap-y-10 lg:max-w-none lg:grid-cols-2 lg:gap-y-16'
+        >
+          {
+            E_PURGE_BENEFITS.map(({ title, description }) => (
+              <EPurgeBenefitItem title={title} description={description} />
+            ))
+          }
+        </dl>
+      </div>
+    </div>
+    <div class='mx-auto max-w-7xl px-6 lg:px-8 mt-24'>
+      <img
+        src='/table_e-purge.jpg'
+        alt='App screenshot'
+        class='rounded-xl ring-1 ring-white/10'
+        width='2432'
+        height='1442'
+      />
+      <div class='relative' aria-hidden='true'>
+        <div
+          class='absolute -inset-x-20 bottom-0 bg-gradient-to-t from-[#d5e5d7] pt-[7%]'
+        >
+        </div>
+      </div>
+    </div>
+  </section>
+</Layout>
+
+<style>
+  .outlined-text-1::before {
+    content: "E-PURGE";
+    -webkit-text-stroke-width: 1px;
+    -webkit-text-stroke-color: #74bc1f;
+    color: transparent;
+    position: absolute;
+    left: -5px;
+    top: -2px;
+  }
+  .left-item {
+    clip-path: polygon(0 0, 100% 0, 100% 80%, 80% 80%, 80% 100%, 0 100%);
+  }
+
+  .right-item {
+    clip-path: polygon(0 0, 100% 0, 100% 100%, 35% 100%, 35% 53%, 0 53%);
+
+    @media (max-width: 650px) {
+      clip-path: polygon(0 0, 100% 0, 100% 100%, 72% 100%, 72% 53%, 0 53%);
+    }
+  }
+</style>

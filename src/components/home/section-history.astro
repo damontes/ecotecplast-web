@@ -1,0 +1,266 @@
+---
+import { Image } from "astro:assets";
+import logAei from "@/images/logo-companies/aei.png";
+import logAimplas from "@/images/logo-companies/aimplas.png";
+import logAnipac from "@/images/logo-companies/anipac.png";
+import logCoparmex from "@/images/logo-companies/coparmex.png";
+
+import molecules from "@/images/molecules.svg";
+import minorTexture from "@/images/minor-texture.png";
+import history from "@/images/history.png";
+
+const logos = [
+  {
+    src: logAei,
+    alt: "Asociación de Empresarios de Iztapalapa",
+  },
+  {
+    src: logAimplas,
+    alt: "Instituto Tecnológico del Plástico",
+  },
+  {
+    src: logAnipac,
+    alt: "Asociación Nacional de Industrias del Plástico",
+  },
+  {
+    src: logCoparmex,
+    alt: "Confederación Patronal de la República Mexicana",
+  },
+];
+---
+
+<section class='bg-white relative w-full py-24'>
+  <Image
+    src={molecules}
+    alt='Moleculas'
+    class='absolute lg:left-4 bottom-0 translate-y-1/2 h-1/4 lg:h-1/3 object-cover w-auto z-10'
+  />
+  <div class='w-full max-w-6xl mx-auto px-4 xl:px-0'>
+    <div class='relative'>
+      <div class='w-full'>
+        <div class='flex flex-col sm:translate-x-1/4 ml-10 sm:-ml-10'>
+          <div class='flex gap-x-2 items-baseline'>
+            <Image
+              src={minorTexture}
+              alt='Texture'
+              class='h-auto w-16 sm:w-24 translate-y-5 absolute -top-5 -left-8 md:-top-10 md:-left-20 sm:block'
+            />
+            <span class='text-secondary-600 font-black text-6xl sm:text-7xl'
+              >2</span
+            >
+            <span class='text-secondary-600 font-black text-7xl sm:text-8xl'
+              >8 años</span
+            >
+          </div>
+          <span
+            class='block text-secondary-600 font-black text-5xl sm:text-6xl -ml-10 sm:-ml-20'
+          >
+            de experiencia</span
+          >
+        </div>
+        <p
+          class='text-secondary-600 font-normal lg:max-w-xl text-base sm:text-xl mt-4 leading-8'
+        >
+          En el sector plástico, innovamos para eficientar los desafíos
+          técnicos, con el enfoque de ayudar al planeta, fomentando el
+          reciclaje, el reúso de productos, la reducción de tiempos y
+          desperdicios, teniendo siempre como objetivo la economía circular
+          desde el suministro de materiales y procesos, hasta el cliente final.
+        </p>
+      </div>
+      <Image
+        src={history}
+        alt='Texture'
+        class='sm:w-1/2 lg:w-1/3 xl:w-1/2 h-auto lg:absolute right-0 top-10 xl:top-1 md:mt-8'
+      />
+    </div>
+  </div>
+  <div class='pt-24 lg:pt-48 w-full max-w-7xl mx-auto space-y-32'>
+    <div
+      class='relative lg:h-[26rem] px-4 flex flex-col gap-y-14 lg:gap-y-0 lg:flex-row w-full max-w-lg lg:max-w-6xl mx-auto text-secondary-600'
+    >
+      <div class='max-w-xs lg:absolute top-0 left-10'>
+        <div class='flex relative'>
+          <p
+            class='text-primary-500 text-6xl font-black [writing-mode:tb] -rotate-180 outlined-text-3'
+          >
+            2011
+          </p>
+          <ul class='text-lg ml-4'>
+            <li>Se funda Ecotecplast</li>
+            <li>
+              Comercialización de masterbatch y maquila de nuestros aditivos.
+            </li>
+          </ul>
+          <svg
+            xmlns='http://www.w3.org/2000/svg'
+            width='180'
+            height='109'
+            viewBox='0 0 180 109'
+            fill='none'
+            class='absolute bottom-0 left-10 z-10 translate-y-full'
+          >
+            <path
+              d='M11.0002 0.572998C-4.99975 26.573 -26.9998 174.573 179 72.573'
+              stroke='black'
+              stroke-opacity='0.5'
+              stroke-dasharray='2 2'></path>
+          </svg>
+        </div>
+      </div>
+      <div class='max-w-xs lg:absolute top-48 left-64 self-end'>
+        <div class='relative'>
+          <p
+            class='text-primary-500 relative w-fit ml-auto md:ml-16 lg:ml-0 text-6xl font-black outlined-text-4'
+          >
+            2015
+          </p>
+          <ul class='text-lg text-right lg:text-left'>
+            <li>Adquirimos nuestra 1er línea de extrusión</li>
+            <li>Fabricación de aditivos en planta propia.</li>
+          </ul>
+          <svg
+            xmlns='http://www.w3.org/2000/svg'
+            width='166'
+            height='131'
+            viewBox='0 0 166 131'
+            fill='none'
+            class='hidden lg:block absolute top-0 right-6 z-10 -translate-y-full'
+          >
+            <path
+              d='M1 130.573C5.0648 35.6502 101 -13.427 165 4.573'
+              stroke='black'
+              stroke-opacity='0.5'
+              stroke-dasharray='2 2'></path>
+          </svg>
+          <svg
+            xmlns='http://www.w3.org/2000/svg'
+            width='59'
+            height='96'
+            fill='none'
+            class='block lg:hidden absolute -bottom-16 left-1/2 z-10 -translate-x-1/2'
+            ><path
+              stroke='#000'
+              stroke-dasharray='2 2'
+              stroke-opacity='.5'
+              d='M53.176.46C71.846 34.122 35.496 80.873.2 94.745'></path></svg
+          >
+        </div>
+      </div>
+      <div class='max-w-sm lg:absolute top-0 left-2/4'>
+        <div class='relative flex'>
+          <p
+            class='text-primary-500 text-6xl font-black [writing-mode:tb] -rotate-180 outlined-text-5'
+          >
+            2021
+          </p>
+          <ul class='text-lg ml-4'>
+            <li>Renovamos nuestra imagen</li>
+            <li>Contamos con 8 líneas de extrusión Laboratorio I + D</li>
+            <li>Integramos programas de economía circular.</li>
+          </ul>
+          <svg
+            xmlns='http://www.w3.org/2000/svg'
+            width='216'
+            height='110'
+            viewBox='0 0 216 110'
+            fill='none'
+            class='hidden lg:block absolute bottom-0 left-10 z-10 translate-y-full'
+          >
+            <path
+              d='M1 0.572998C1 0.572998 49 194.573 215 64.573'
+              stroke='black'
+              stroke-opacity='0.5'
+              stroke-dasharray='2 2'></path>
+          </svg>
+          <svg
+            xmlns='http://www.w3.org/2000/svg'
+            width='180'
+            height='109'
+            viewBox='0 0 180 109'
+            fill='none'
+            class='block lg:hidden absolute bottom-0 left-10 z-10 translate-y-full'
+          >
+            <path
+              d='M11.0002 0.572998C-4.99975 26.573 -26.9998 174.573 179 72.573'
+              stroke='black'
+              stroke-opacity='0.5'
+              stroke-dasharray='2 2'></path>
+          </svg>
+        </div>
+      </div>
+      <div class='max-w-xs lg:absolute bottom-12 right-0 self-end'>
+        <p
+          class='text-primary-500 w-fit ml-auto md:ml-16 lg:ml-0 text-6xl font-black outlined-text-6 relative'
+        >
+          2022
+        </p>
+        <div class='text-right lg:text-left'>
+          <p class='text-lg'>Desarrollo de nuevas lineas de productos:</p>
+          <ul class='text-lg ml-4'>
+            <li>E-purge</li>
+            <li>Full Master Color</li>
+            <li>Deslizantes</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class='space-y-4 px-4 md:px-0'>
+      <h2 class='text-center text-lg text-secondary-700 font-black'>
+        Con la alianza de las empresas e instituciones más importantes del
+        plástico
+      </h2>
+      <div
+        class='grid sm:grid-cols-2 gap-8 xl:grid-cols-4 py-6 place-content-center'
+      >
+        {
+          logos.map(({ src, alt }) => (
+            <Image
+              src={src}
+              alt={alt}
+              class='my-auto object-contain h-14 w-full grayscale'
+            />
+          ))
+        }
+      </div>
+    </div>
+  </div>
+</section>
+<style>
+  .outlined-text-3::before {
+    content: "2011";
+    -webkit-text-stroke-width: 1px;
+    -webkit-text-stroke-color: #74bc1f;
+    color: transparent;
+    position: absolute;
+    left: -3px;
+    top: -4px;
+  }
+  .outlined-text-4::before {
+    content: "2015";
+    -webkit-text-stroke-width: 1px;
+    -webkit-text-stroke-color: #74bc1f;
+    color: transparent;
+    position: absolute;
+    left: 5px;
+    top: -2px;
+  }
+  .outlined-text-5::before {
+    content: "2021";
+    -webkit-text-stroke-width: 1px;
+    -webkit-text-stroke-color: #74bc1f;
+    color: transparent;
+    position: absolute;
+    left: -3px;
+    top: -4px;
+  }
+  .outlined-text-6::before {
+    content: "2022";
+    -webkit-text-stroke-width: 1px;
+    -webkit-text-stroke-color: #74bc1f;
+    color: transparent;
+    position: absolute;
+    left: -2px;
+    top: 3px;
+  }
+</style>

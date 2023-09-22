@@ -1,0 +1,115 @@
+---
+import { Image } from "astro:assets";
+import reciclado from "@/images/section-products/reciclado.jpg";
+import inyeccion from "@/images/section-products/inyeccion.jpg";
+import purga from "@/images/section-products/purga.jpg";
+import pelicula from "@/images/section-products/pelicula.jpg";
+import molecules from "@/images/molecules.svg";
+
+const CARDS = [
+  {
+    title: "RECICLADOS",
+    image: reciclado,
+    items: [
+      "Colores 100% Activos",
+      "Modificador de Fluidez",
+      "Antioxidante",
+      "Clarificante para Polipropileno",
+      "Desmoldante",
+      "Modificador de Impacto",
+    ],
+  },
+  {
+    title: "INYECCIÓN",
+    image: inyeccion,
+    items: [
+      "Antibacteriales",
+      "Disipativos",
+      "Conductivos",
+      "Antiestáticos ESD",
+      "Retardantes de flama para construcción",
+      " Colores de Especialidad",
+    ],
+  },
+  {
+    title: "PURGA",
+    image: purga,
+    items: [
+      "Purga PBW Fast Cleany",
+      "Purga PBW",
+      "Strech Film Agricultura",
+      "Termoencogible",
+    ],
+  },
+  {
+    title: "PELÍCULA",
+    image: pelicula,
+    items: ["Empaque", "Bolsa", "Strech Film", "Agricultura", "Termoencogible"],
+  },
+];
+---
+
+<section class='relative sm:py-24 overflow-hidden' id='about-us'>
+  <Image
+    src={molecules}
+    alt='Additives Options'
+    class='absolute right-0 translate-x-10 top-1/2 -translate-y-1/2 h-1/3 object-cover w-auto -z-10'
+  />
+  <div class='mx-auto max-w-7xl w-full py-10 flex flex-col gap-y-12'>
+    <div class='space-y-4 px-6 lg:px-0'>
+      <h2
+        class='text-center text-2xl sm:text-4xl text-secondary-700 font-black'
+      >
+        Comprometidos con la innovación y desarrollo.
+      </h2>
+      <p
+        class='text-center text-base sm:text-lg text-secondary-600 max-w-4xl mx-auto font-normal'
+      >
+        Somos una empresa enfocada en aditivos 100% activos para el plástico,
+        generando <b>economía circular</b>
+         dentro de nuestros procesos y productos.
+      </p>
+    </div>
+    <div
+      class='grid sm:grid-cols-2 xl:grid-cols-4 w-full mx-auto gap-4 place-content-center px-4'
+    >
+      {
+        CARDS.map(({ title, items, image }) => (
+          <article class='relative cols-span-1 shadow-xl rounded-lg bg-white flex flex-col overflow-hidden w-full max-w-sm mx-auto'>
+            <Image
+              src={image}
+              alt={title}
+              class='object-cover w-full h-60 rounded-t-lg'
+            />
+            <div class='bg-primary-800 px-6 py-4 flex-1 -translate-x-0 group-hover'>
+              <h3 class='text-lg font-bold text-white uppercase'>{title}</h3>
+              <ul class='space-y-4 mt-2'>
+                {items.map((item) => (
+                  <li class='flex items-center gap-x-2'>
+                    <svg
+                      xmlns='http://www.w3.org/2000/svg'
+                      width='24'
+                      height='24'
+                      viewBox='0 0 24 24'
+                      stroke-width='2'
+                      stroke='currentColor'
+                      fill='none'
+                      stroke-linecap='round'
+                      stroke-linejoin='round'
+                      class='w-6 h-6 text-white/80 min-w-min'
+                    >
+                      <path stroke='none' d='M0 0h24v24H0z' fill='none' />
+                      <path d='M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0' />
+                      <path d='M9 12l2 2l4 -4' />
+                    </svg>
+                    <span class='text-white/80'>{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </article>
+        ))
+      }
+    </div>
+  </div>
+</section>

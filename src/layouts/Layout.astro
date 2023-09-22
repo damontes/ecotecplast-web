@@ -1,6 +1,6 @@
 ---
 import Navigation from "../components/Navigation.astro";
-
+import Footer from "../components/Footer.astro";
 interface Props {
   title: string;
   description: string;
@@ -14,16 +14,28 @@ const { title, description } = Astro.props;
   <head>
     <meta charset='UTF-8' />
     <meta name='viewport' content='width=device-width, initial-scale=1.0' />
-    <meta property='og:title' content={title} />
-    <meta property='og:description' content={description} />
-    <meta property='og:image' content='/logo.png' />
-    <meta name='generator' content={Astro.generator} />
+
+    <meta name='description' content={description} />
+    <meta
+      name='keywords'
+      content='aditivos, reciclaje, master color, monopigmentos'
+    />
+    <meta name='og:image' content='/logo.png' />
+    <meta name='og:title' content='Ecotecplast, aditivos 100% activos.' />
+    <meta name='og:description' content={description} />
+    <meta name='og:url' content='https://ecotecplast.com' />
+    <meta name='og:site_name' content='Ecotecplast' />
+    <meta name='og:type' content='website' />
+    <meta name='og:locale' content='es_ES' />
     <link rel='icon' type='image/png' href='/logo.png' />
     <title>{title}</title>
   </head>
   <body>
-    <Navigation />
+    <header>
+      <Navigation />
+    </header>
     <slot />
+    <Footer />
   </body>
 </html>
 <style is:global>
@@ -45,5 +57,6 @@ const { title, description } = Astro.props;
   html {
     font-family: system-ui, sans-serif;
     background: #d5e5d7;
+    scroll-behavior: smooth;
   }
 </style>
