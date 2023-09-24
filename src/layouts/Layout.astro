@@ -28,6 +28,12 @@ const { title, description } = Astro.props
     <meta name='og:site_name' content='Ecotecplast' />
     <meta name='og:type' content='website' />
     <meta name='og:locale' content='es_ES' />
+    <meta name='twitter:card' content='summary_large_image' />
+    <meta name='twitter:site' content='@midudev' />
+    <meta name='twitter:creator' content='@midudev' />
+    <meta name='twitter:title' content={title} />
+    <meta name='twitter:description' content={description} />
+    <meta name='twitter:image' content='/logo.png' />
     <link rel='icon' type='image/png' href='/logo.png' />
     <title>{title}</title>
   </head>
