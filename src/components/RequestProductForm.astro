@@ -34,11 +34,11 @@ const { product } = Astro.props
   const form = document.querySelector('form')
   const product = form?.dataset.product
 
-  const button = document.querySelector('button')
+  const button = form?.querySelector('button')
 
   const clean = () => {
     if (button) {
-      button.innerHTML = 'Enviar'
+      button.innerText = 'Enviar'
       button.disabled = false
     }
   }
@@ -49,7 +49,7 @@ const { product } = Astro.props
     const values = Object.fromEntries(body.entries())
 
     if (button) {
-      button.innerHTML = 'Enviando...'
+      button.innerText = 'Enviando...'
       button.disabled = true
     }
 

@@ -37,7 +37,7 @@ const { product } = Astro.props
 
   const form = document.querySelector('form')
 
-  const button = document.querySelector('button')
+  const button = form?.querySelector('button')
 
   const clean = () => {
     if (button) {
