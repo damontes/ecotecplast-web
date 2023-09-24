@@ -1,6 +1,6 @@
 ---
-import { Image } from "astro:assets";
-import headerBackground from "@/images/header-background.jpg";
+import { Image } from 'astro:assets'
+import headerBackground from '@/images/header-background.jpg'
 ---
 
 <header
@@ -32,16 +32,20 @@ import headerBackground from "@/images/header-background.jpg";
 </header>
 <style>
   .outlined-text-1::before {
-    content: "Maximizando";
+    content: 'Maximizando';
     -webkit-text-stroke-width: 1px;
     -webkit-text-stroke-color: #74bc1f;
     color: transparent;
     position: absolute;
     left: -5px;
     top: -2px;
+    @media (min-width: 640px) {
+      left: -10px;
+      top: -5px;
+    }
   }
   .outlined-text-2::before {
-    content: "los plasticos";
+    content: 'los plasticos';
     -webkit-text-stroke-width: 1px;
     -webkit-text-stroke-color: #74bc1f;
     color: transparent;
