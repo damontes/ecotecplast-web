@@ -1,14 +1,12 @@
 import { defineConfig } from 'astro/config'
 import mdx from '@astrojs/mdx'
 import tailwind from '@astrojs/tailwind'
-import nodejs from '@astrojs/node'
+import vercel from '@astrojs/vercel/serverless'
 
 // https://astro.build/config
 export default defineConfig({
-  // adapter: nodejs({
-  //   mode: 'middleware' // or 'standalone'
-  // }),
-  // output: 'hybrid',
+  output: 'server',
+  adapter: vercel(),
   integrations: [tailwind(), mdx()],
   base: '/'
 })

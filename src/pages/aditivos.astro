@@ -1,13 +1,14 @@
 ---
-import { Image } from "astro:assets";
-import Layout from "../layouts/Layout.astro";
-import textureMolecures from "@/images/texture_molecules.svg";
-import molecules from "@/images/molecules.svg";
-import { getCollection } from "astro:content";
-import AdditiveItem from "@/components/AdditiveItem.astro";
+import { Image } from 'astro:assets'
+import Layout from '../layouts/Layout.astro'
+import textureMolecures from '@/images/texture_molecules.svg'
+import molecules from '@/images/molecules.svg'
+import { getCollection } from 'astro:content'
+import AdditiveItem from '@/components/AdditiveItem.astro'
 
-const productAdditives = await getCollection("additive-products");
-const processesAdditives = await getCollection("additive-processes");
+const productAdditives = await getCollection('additive-products')
+const processesAdditives = await getCollection('additive-processes')
+export const prerender = true
 ---
 
 <Layout title='Aditivos' description='Aditivos 100% activos en pellet'>
@@ -88,26 +89,26 @@ const processesAdditives = await getCollection("additive-processes");
 <script>
   const productList =
     document
-      .getElementById("additive-products")
-      ?.getElementsByTagName("button") ?? [];
+      .getElementById('additive-products')
+      ?.getElementsByTagName('button') ?? []
   const processList =
     document
-      .getElementById("additive-processes")
-      ?.getElementsByTagName("button") ?? [];
+      .getElementById('additive-processes')
+      ?.getElementsByTagName('button') ?? []
 
   Array.from([...productList, ...processList]).forEach((element) => {
-    element?.addEventListener("click", async (e) => {
-      const item = (e.target as HTMLElement).closest("li");
-      const slug = item?.getAttribute("data-slug") ?? "";
+    element?.addEventListener('click', async (e) => {
+      const item = (e.target as HTMLElement).closest('li')
+      const slug = item?.getAttribute('data-slug') ?? ''
 
-      const dialog = document.getElementById(slug) as HTMLDialogElement;
-      dialog?.showModal();
-    });
-  });
+      const dialog = document.getElementById(slug) as HTMLDialogElement
+      dialog?.showModal()
+    })
+  })
 </script>
 <style>
   .outlined-text-1::before {
-    content: "aditivos";
+    content: 'aditivos';
     -webkit-text-stroke-width: 1px;
     -webkit-text-stroke-color: #74bc1f;
     color: transparent;
