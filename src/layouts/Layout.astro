@@ -8,6 +8,8 @@ interface Props {
 }
 
 const { title, description } = Astro.props
+
+const image = 'https://ecotecplast-web.vercel.app/logo.png'
 ---
 
 <!doctype html>
@@ -21,7 +23,7 @@ const { title, description } = Astro.props
       name='keywords'
       content='aditivos, reciclaje, master color, monopigmentos'
     />
-    <meta name='og:image' content='/logo.png' />
+    <meta name='og:image' content={image} />
     <meta name='og:title' content={title} />
     <meta name='og:description' content={description} />
     <meta name='og:url' content='https://ecotecplast-web.vercel.app/' />
@@ -33,7 +35,7 @@ const { title, description } = Astro.props
     <meta name='twitter:creator' content='@midudev' />
     <meta name='twitter:title' content={title} />
     <meta name='twitter:description' content={description} />
-    <meta name='twitter:image' content='/logo.png' />
+    <meta name='twitter:image' content={image} />
     <link rel='icon' type='image/png' href='/logo.png' />
     <title>{title}</title>
   </head>
