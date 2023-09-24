@@ -1,52 +1,47 @@
 ---
-import { Image } from "astro:assets";
-import reciclado from "@/images/section-products/reciclado.jpg";
-import inyeccion from "@/images/section-products/inyeccion.jpg";
-import purga from "@/images/section-products/purga.jpg";
-import pelicula from "@/images/section-products/pelicula.jpg";
-import molecules from "@/images/molecules.svg";
+import { Image } from 'astro:assets'
+import reciclado from '@/images/section-products/reciclado.jpg'
+import inyeccion from '@/images/section-products/inyeccion.jpg'
+import purga from '@/images/section-products/purga.jpg'
+import pelicula from '@/images/section-products/pelicula.jpg'
+import molecules from '@/images/molecules.svg'
 
 const CARDS = [
   {
-    title: "RECICLADOS",
+    title: 'RECICLADOS',
     image: reciclado,
     items: [
-      "Colores 100% Activos",
-      "Modificador de Fluidez",
-      "Antioxidante",
-      "Clarificante para Polipropileno",
-      "Desmoldante",
-      "Modificador de Impacto",
-    ],
+      'Colores 100% Activos',
+      'Modificador de Fluidez',
+      'Antioxidante',
+      'Clarificante para Polipropileno',
+      'Desmoldante',
+      'Modificador de Impacto'
+    ]
   },
   {
-    title: "INYECCIÓN",
+    title: 'INYECCIÓN',
     image: inyeccion,
     items: [
-      "Antibacteriales",
-      "Disipativos",
-      "Conductivos",
-      "Antiestáticos ESD",
-      "Retardantes de flama para construcción",
-      " Colores de Especialidad",
-    ],
+      'Antibacteriales',
+      'Disipativos',
+      'Conductivos',
+      'Antiestáticos ESD',
+      'Retardantes de flama para construcción',
+      'Colores de Especialidad'
+    ]
   },
   {
-    title: "PURGA",
+    title: 'PURGA',
     image: purga,
-    items: [
-      "Purga PBW Fast Cleany",
-      "Purga PBW",
-      "Strech Film Agricultura",
-      "Termoencogible",
-    ],
+    items: ['Purga PBW Fast Clean', 'Purga PBW']
   },
   {
-    title: "PELÍCULA",
+    title: 'PELÍCULA',
     image: pelicula,
-    items: ["Empaque", "Bolsa", "Strech Film", "Agricultura", "Termoencogible"],
-  },
-];
+    items: ['Empaque', 'Bolsa', 'Strech Film', 'Agricultura', 'Termoencogible']
+  }
+]
 ---
 
 <section class='relative sm:py-24 overflow-hidden' id='about-us'>
