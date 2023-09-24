@@ -1,0 +1,75 @@
+---
+import Button from './Button.astro'
+import Input from './Input.astro'
+
+const { product } = Astro.props
+---
+
+<form data-product={product} method='POST' class='lg:flex-auto'>
+  <div class='grid grid-cols-1 gap-x-8 gap-y-6 sm:grid-cols-2'>
+    <Input
+      className='col-span-2'
+      label='Nombre *'
+      type='text'
+      name='name'
+      id='name'
+    />
+    <Input
+      className='col-span-2'
+      label='Correo Electronico *'
+      type='text'
+      name='email'
+      id='email'
+    />
+    <Input label='Empresa' type='text' name='company' id='company' />
+    <Input label='Número Telefónico' type='text' name='phone' id='phone' />
+  </div>
+  <div class='mt-10'>
+    <Button>Enviar</Button>
+  </div>
+</form>
+<script>
+  import { CATEGORY } from '@/const'
+
+  const form = document.querySelector('form')
+  const product = form?.dataset.product
+
+  const button = document.querySelector('button')
+
+  const clean = () => {
+    if (button) {
+      button.innerHTML = 'Enviar'
+      button.disabled = false
+    }
+  }
+
+  form?.addEventListener('submit', async (e) => {
+    e.preventDefault()
+    const body = new FormData(form)
+    const values = Object.fromEntries(body.entries())
+
+    if (button) {
+      button.innerHTML = 'Enviando...'
+      button.disabled = true
+    }
+
+    if (!values.name || !values.email) {
+      alert('Por favor, ingrese su nombre y correo electrónico')
+      clean()
+      return
+    }
+
+    const raw = await fetch(
+      `/api/send-email?product=${product}&category=${CATEGORY.REQUEST_SAMPLE}`,
+      {
+        method: form.method,
+        body: new FormData(form)
+      }
+    )
+
+    const response = await raw.json()
+    clean()
+    form?.reset()
+    alert(response.message)
+  })
+</script>

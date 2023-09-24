@@ -1,30 +1,32 @@
 ---
-import { Image } from "astro:assets";
-import Layout from "@/layouts/Layout.astro";
-import orange from "@/images/colors/orange.jpg";
-import blue from "@/images/colors/blue.jpg";
-import red from "@/images/colors/red.jpg";
-import darkBlue from "@/images/colors/dark-blue.jpg";
-import fluorecenteUno from "@/images/colors/fluorecente-uno.jpg";
-import fluorecenteDos from "@/images/colors/fluorecente-dos.jpg";
-import CheckItem from "@/components/CheckItem.astro";
+import { Image } from 'astro:assets'
+import Layout from '@/layouts/Layout.astro'
+import orange from '@/images/colors/orange.jpg'
+import blue from '@/images/colors/blue.jpg'
+import red from '@/images/colors/red.jpg'
+import darkBlue from '@/images/colors/dark-blue.jpg'
+import fluorecenteUno from '@/images/colors/fluorecente-uno.jpg'
+import fluorecenteDos from '@/images/colors/fluorecente-dos.jpg'
+import CheckItem from '@/components/CheckItem.astro'
+import RequestProductForm from '@/components/RequestProductForm.astro'
+import { PRODUCT } from '@/const'
 
 const FULL_MASTER_COLOR_BENEFITS = [
-  "Alto desempeño",
-  "Intensidad en color",
-  "Mayor brillo",
-  "Buena dispersión",
-];
+  'Alto desempeño',
+  'Intensidad en color',
+  'Mayor brillo',
+  'Buena dispersión'
+]
 const FULL_MASTER_COLOR_APPLICATIONS = [
-  "LDPE",
-  "PP",
-  "HDPE",
-  "PS",
-  "HIPS",
-  "ABS",
-  "SAN",
-  "PET",
-];
+  'LDPE',
+  'PP',
+  'HDPE',
+  'PS',
+  'HIPS',
+  'ABS',
+  'SAN',
+  'PET'
+]
 ---
 
 <Layout
@@ -176,6 +178,20 @@ const FULL_MASTER_COLOR_APPLICATIONS = [
               pelets son predispersos.
             </p>
           </div>
+        </div>
+      </div>
+    </div>
+    <div class='relative isolate px-6 py-24 sm:py-32 lg:px-8'>
+      <div class='mx-auto max-w-lg'>
+        <h2 class='text-4xl font-bold tracking-tight text-secondary-700'>
+          Solicite una muestra
+        </h2>
+        <p class='mt-2 text-lg leading-8 text-gray-600'>
+          Registrese aquí, reciba muestras y acceda a nuestro catálogo de
+          productos
+        </p>
+        <div class='mt-10 max-w-lg mx-auto'>
+          <RequestProductForm product={PRODUCT.FULL_MASTER_COLOR} />
         </div>
       </div>
     </div>

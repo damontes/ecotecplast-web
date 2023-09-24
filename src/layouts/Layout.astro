@@ -1,12 +1,13 @@
 ---
-import Navigation from "../components/Navigation.astro";
-import Footer from "../components/Footer.astro";
+import Navigation from '../components/Navigation.astro'
+import Footer from '../components/Footer.astro'
+import Slider from '@/components/Slider.astro'
 interface Props {
-  title: string;
-  description: string;
+  title: string
+  description: string
 }
 
-const { title, description } = Astro.props;
+const { title, description } = Astro.props
 ---
 
 <!doctype html>
@@ -51,8 +52,8 @@ const { title, description } = Astro.props;
     );
   }
   @font-face {
-    font-family: "Monsterrat";
-    src: url("/fonts/Monsterrat.ttf") format("truetype");
+    font-family: 'Monsterrat';
+    src: url('/fonts/Monsterrat.ttf') format('truetype');
   }
   html {
     font-family: system-ui, sans-serif;

@@ -1,0 +1,78 @@
+---
+import Button from './Button.astro'
+import Input from './Input.astro'
+import Textarea from './Textarea.astro'
+
+const { product } = Astro.props
+---
+
+<form
+  data-product={product}
+  method='POST'
+  class='px-6 pb-24 pt-20 sm:pb-32 lg:px-8 lg:py-48'
+>
+  <div class='grid grid-cols-1 gap-x-8 gap-y-6'>
+    <Input
+      className='sm:col-span-2'
+      label='Nombre *'
+      type='text'
+      name='name'
+      id='name'
+    />
+    <Input
+      className='sm:col-span-2'
+      label='Correo Electronico *'
+      type='text'
+      name='email'
+      id='email'
+    />
+    <Textarea label='Mensaje' name='message' id='message' />
+  </div>
+  <div class='mt-10'>
+    <Button>Enviar</Button>
+  </div>
+</form>
+<script>
+  import { CATEGORY } from '@/const'
+
+  const form = document.querySelector('form')
+
+  const button = document.querySelector('button')
+
+  const clean = () => {
+    if (button) {
+      button.innerHTML = 'Enviar'
+      button.disabled = false
+    }
+  }
+
+  form?.addEventListener('submit', async (e) => {
+    e.preventDefault()
+    const body = new FormData(form)
+    const values = Object.fromEntries(body.entries())
+
+    if (button) {
+      button.innerHTML = 'Enviando...'
+      button.disabled = true
+    }
+
+    if (!values.name || !values.email) {
+      alert('Por favor, ingrese su nombre y correo electrónico')
+      clean()
+      return
+    }
+
+    const raw = await fetch(
+      `/api/send-email?category=${CATEGORY.REQUEST_CONTACT}`,
+      {
+        method: form.method,
+        body: new FormData(form)
+      }
+    )
+
+    const response = await raw.json()
+    clean()
+    form?.reset()
+    alert(response.message)
+  })
+</script>

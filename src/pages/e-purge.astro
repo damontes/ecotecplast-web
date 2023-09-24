@@ -1,34 +1,36 @@
 ---
-import Layout from "@/layouts/Layout.astro";
-import { Image } from "astro:assets";
-import purgaHusillo from "@/images/e-purge/purga-husillo.jpg";
-import purgaColor from "@/images/e-purge/purga-uno.jpg";
-import purga from "@/images/e-purge/purga-dos.jpg";
-import EPurgeBenefitItem from "@/components/EPurgeBenefitItem.astro";
-import molecules from "@/images/molecules.svg";
+import Layout from '@/layouts/Layout.astro'
+import { Image } from 'astro:assets'
+import purgaHusillo from '@/images/e-purge/purga-husillo.jpg'
+import purgaColor from '@/images/e-purge/purga-uno.jpg'
+import purga from '@/images/e-purge/purga-dos.jpg'
+import EPurgeBenefitItem from '@/components/EPurgeBenefitItem.astro'
+import molecules from '@/images/molecules.svg'
+import RequestProductForm from '@/components/RequestProductForm.astro'
+import { PRODUCT } from '@/const'
 
 const E_PURGE_BENEFITS = [
   {
-    title: "Cambios rápidos",
+    title: 'Cambios rápidos',
     description:
-      "E-purge acelera los cambios de color y material, logrando una mejora del 75% en la velocidad.",
+      'E-purge acelera los cambios de color y material, logrando una mejora del 75% en la velocidad.'
   },
   {
-    title: "Sin extracción de husillo",
+    title: 'Sin extracción de husillo',
     description:
-      " La innovadora fórmula de E-purge permite una limpieza a fondo sin necesidad de desmontar la máquina ni extraer el husillo.",
+      ' La innovadora fórmula de E-purge permite una limpieza a fondo sin necesidad de desmontar la máquina ni extraer el husillo.'
   },
   {
-    title: "Sin contaminación",
+    title: 'Sin contaminación',
     description:
-      " E-purge es altamente efectivo para eliminar la carbonización, un problema común en la industria del plástico.",
+      ' E-purge es altamente efectivo para eliminar la carbonización, un problema común en la industria del plástico.'
   },
   {
-    title: " Adaptable a cambios de temperatura",
+    title: ' Adaptable a cambios de temperatura',
     description:
-      "Este purgante es versátil y se adapta fácilmente a cambios de temperatura.",
-  },
-];
+      'Este purgante es versátil y se adapta fácilmente a cambios de temperatura.'
+  }
+]
 ---
 
 <Layout
@@ -39,7 +41,7 @@ const E_PURGE_BENEFITS = [
     <Image
       src={molecules}
       alt='Moleculas'
-      class='absolute left-1/2 top-1/4 h-96 w-auto'
+      class='absolute left-0 top-1/4 h-96 sm:h-1/2 w-auto aspect-square -z-10'
     />
     <h1
       class='relative text-primary-500 text-3xl sm:text-7xl font-black text-custom outlined-text-1'
@@ -64,9 +66,9 @@ const E_PURGE_BENEFITS = [
       </div>
       <div class='w-full col-span-3'>
         <div
-          class='-m-2 rounded-xl bg-gray-900/5 p-2 ring-1 ring-inset ring-gray-900/10 lg:-m-4 lg:rounded-2xl lg:p-4'
+          class='sm:-m-2 rounded-xl bg-gray-900/5 p-2 ring-1 ring-inset ring-gray-900/10 lg:-m-4 lg:rounded-2xl lg:p-4 overflow-hidden'
         >
-          <img
+          <Image
             src='/grafica_e-purge.jpg'
             alt='App screenshot'
             width='2432'
@@ -120,7 +122,7 @@ const E_PURGE_BENEFITS = [
         <Image src={purga} alt='Purga' class='object-contain h-full w-full' />
       </div>
     </div>
-    <div class='mx-auto mt-32 max-w-7xl px-6 sm:mt-48 lg:px-8'>
+    <div class='mx-auto mt-32 max-w-7xl px-6 sm:mt-48 lg:px-8 relative'>
       <div class='mx-auto max-w-2xl lg:text-center'>
         <p
           class='mt-2 text-3xl font-bold tracking-tight text-secondary-700 sm:text-4xl'
@@ -140,8 +142,10 @@ const E_PURGE_BENEFITS = [
         </dl>
       </div>
     </div>
-    <div class='mx-auto max-w-7xl px-6 lg:px-8 mt-24'>
-      <img
+    <div
+      class='mx-auto max-w-7xl px-6 lg:px-8 mt-24 hidden md:block overflow-hidden'
+    >
+      <Image
         src='/table_e-purge.jpg'
         alt='App screenshot'
         class='rounded-xl ring-1 ring-white/10'
@@ -156,11 +160,30 @@ const E_PURGE_BENEFITS = [
       </div>
     </div>
   </section>
+  <div class='relative isolate px-6 py-24 sm:py-32 lg:px-8'>
+    <div class='mx-auto max-w-lg'>
+      <h2 class='text-4xl font-bold tracking-tight text-secondary-700'>
+        Solicite una muestra
+      </h2>
+      <p class='mt-2 text-lg leading-8 text-gray-600'>
+        Registrese aquí, reciba muestras y acceda a nuestro catálogo de
+        productos
+      </p>
+      <div class='mt-10 max-w-lg mx-auto'>
+        <RequestProductForm product={PRODUCT.E_PURGE} />
+      </div>
+    </div>
+  </div>
+  <Image
+    src={molecules}
+    alt='Moleculas'
+    class='absolute right-0 top-full h-96 sm:h-1/2 w-auto -z-10'
+  />
 </Layout>
 
 <style>
   .outlined-text-1::before {
-    content: "E-PURGE";
+    content: 'E-PURGE';
     -webkit-text-stroke-width: 1px;
     -webkit-text-stroke-color: #74bc1f;
     color: transparent;

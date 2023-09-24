@@ -1,104 +1,86 @@
 ---
-import { Image } from "astro:assets";
-import clsx from "clsx";
-
-const { url } = Astro;
-const path = url.pathname;
-
-const LINKS = [
-  {
-    label: "Acerca de ecotecplast",
-    href: "/#about-us",
-    section: "#about-us",
-  },
-  {
-    label: "aditivos",
-    href: "/aditivos",
-  },
-  {
-    label: "E-Purge",
-    href: "/e-purge",
-  },
-  {
-    label: "full master color",
-    href: "/full-master-color",
-  },
-];
+import Button from './Button.astro'
+import MenuButton from './MenuButton.astro'
+import Slider from './Slider.astro'
+import NavList from './NavList.astro'
+const { url } = Astro
+const path = url.pathname
 ---
 
 <nav
   id='nav-container'
-  class='bg-secondary-900 fixed top-0 inset-x-0 z-50 transition-all duration-300 ease-in-out'
+  class='bg-secondary-900 fixed top-0 inset-x-0 z-40 transition-all duration-300 ease-in-out'
 >
-  <ul
-    class='mx-auto flex flex-row items-center justify-between gap-6 w-full max-w-7xl py-4 px-2'
-    id='nav-links'
+  <div
+    class='mx-auto flex flex-row items-center justify-between max-w-7xl py-4 px-8 lg:px-2'
   >
-    <li class='mr-auto'>
-      <a href='/'>
-        <img
-          src='/logo.png'
-          alt='Ecotecplast Logo'
-          class='inset-0 object-cover h-auto w-40'
-        />
-      </a>
+    <a href='/' class='mr-auto'>
+      <img
+        src='/logo.png'
+        alt='Ecotecplast Logo'
+        class='inset-0 object-cover h-auto w-40'
+      />
+    </a>
+    <ul class='gap-6 hidden items-center lg:flex' id='nav-links'>
+      <NavList />
+      <li class='hidden lg:block'>
+        <Button as='a' href='/contacto' active={path === '/contacto'}>
+          Contacto
+        </Button>
+      </li>
+    </ul>
+
+    <li class='block lg:hidden'>
+      <MenuButton />
     </li>
-    {
-      LINKS.map(({ label, href, section }) => {
-        const active = path === href;
-        return (
-          <li class='hidden lg:block'>
-            <a
-              class={clsx("uppercase hover:text-white transition-colors", {
-                "text-white font-bold": active,
-                "text-white/80 font-light": !active,
-              })}
-              href={href}
-              data-section={section}
-            >
-              {label}
-            </a>
-          </li>
-        );
-      })
-    }
-  </ul>
+  </div>
+  <Slider>
+    <ul class='flex flex-col mt-24 px-4 gap-6'>
+      <NavList />
+      <li class='mt-4'>
+        <Button as='a' href='/contacto' active={path === '/contacto'}>
+          Contacto
+        </Button>
+      </li>
+    </ul>
+  </Slider>
 </nav>
+
 <script>
-  let prevScrollY = 0;
-  const threshold = 150;
+  let prevScrollY = 0
+  const threshold = 150
 
   const updateNavLink = () => {
-    const hash = window.location.hash;
-    const navBar = document.getElementById("nav-links");
-    const navLink = navBar?.querySelectorAll("a");
+    const hash = window.location.hash
+    const navBar = document.getElementById('nav-links')
+    const navLink = navBar?.querySelectorAll('a')
     navLink?.forEach((link) => {
       if (link.dataset.section === hash) {
-        link.classList.add("text-white", "font-bold");
-        link.classList.remove("text-white/80", "font-light");
+        link.classList.add('text-white', 'font-bold')
+        link.classList.remove('text-white/80', 'font-light')
       }
-    });
-  };
+    })
+  }
 
   const showNavAfterScrollUp = () => {
-    const scrollY = window.scrollY;
+    const scrollY = window.scrollY
 
     if (Math.abs(scrollY - prevScrollY) >= threshold) {
-      const newScrollDirection = scrollY > prevScrollY ? "down" : "up";
-      const navBar = document.getElementById("nav-container");
-      if (newScrollDirection === "up") {
-        navBar?.classList.add("top-0");
-        navBar?.classList.remove("-top-full");
+      const newScrollDirection = scrollY > prevScrollY ? 'down' : 'up'
+      const navBar = document.getElementById('nav-container')
+      if (newScrollDirection === 'up') {
+        navBar?.classList.add('top-0')
+        navBar?.classList.remove('-top-full')
       } else {
-        navBar?.classList.add("-top-full");
-        navBar?.classList.remove("top-0");
+        navBar?.classList.add('-top-full')
+        navBar?.classList.remove('top-0')
       }
-      prevScrollY = scrollY > 0 ? scrollY : 0;
+      prevScrollY = scrollY > 0 ? scrollY : 0
     }
-  };
+  }
 
-  document.addEventListener("scroll", () => {
-    updateNavLink();
-    showNavAfterScrollUp();
-  });
+  document.addEventListener('scroll', () => {
+    updateNavLink()
+    showNavAfterScrollUp()
+  })
 </script>

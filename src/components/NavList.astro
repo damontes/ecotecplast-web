@@ -1,0 +1,49 @@
+---
+const { url } = Astro
+const path = url.pathname
+
+const LINKS = [
+  {
+    label: 'Acerca de ecotecplast',
+    href: '/#about-us',
+    section: '#about-us'
+  },
+  {
+    label: 'aditivos',
+    href: '/aditivos'
+  },
+  {
+    label: 'E-Purge',
+    href: '/e-purge'
+  },
+  {
+    label: 'full master color',
+    href: '/full-master-color'
+  }
+]
+---
+
+<>
+  {
+    LINKS.map(({ label, href, section }) => {
+      const active = path === href
+      return (
+        <li>
+          <a
+            class:list={[
+              'uppercase hover:text-white transition-colors',
+              {
+                'text-white font-bold': active,
+                'text-white/80 font-light': !active
+              }
+            ]}
+            href={href}
+            data-section={section}
+          >
+            {label}
+          </a>
+        </li>
+      )
+    })
+  }
+</>

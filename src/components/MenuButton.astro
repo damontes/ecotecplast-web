@@ -1,0 +1,49 @@
+<button
+  id='menu-button'
+  class='flex flex-col justify-between h-4 w-5 gap-y-1 relative'
+>
+  <div
+    class='w-full h-[2px] bg-white/80 rounded-sm group-hover:bg-white transition-all origin-left'
+  >
+  </div>
+  <div
+    class='w-full h-[2px] bg-white/80 rounded-sm group-hover:bg-white transition-all origin-left'
+  >
+  </div>
+  <div
+    class='w-full h-[2px] bg-white/80 rounded-sm group-hover:bg-white transition-all origin-left'
+  >
+  </div>
+</button>
+<style>
+  button.open div:first-child {
+    transform: rotate(45deg);
+  }
+
+  button.open div:nth-child(2) {
+    opacity: 0;
+  }
+
+  button.open div:last-child {
+    transform: rotate(-45deg);
+  }
+</style>
+<script>
+  const $button = document.getElementById('menu-button')
+  const $slider = document.getElementById('slider')
+
+  if ($button) {
+    $button.addEventListener('click', () => {
+      const isOpen = $button.classList.contains('open')
+      if (isOpen) {
+        $slider?.classList.add('translate-x-full')
+        $slider?.classList.remove('translate-x-0')
+        $button.classList.remove('open')
+        return
+      }
+      $button.classList.add('open')
+      $slider?.classList.add('translate-x-0')
+      $slider?.classList.remove('translate-x-full')
+    })
+  }
+</script>
