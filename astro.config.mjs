@@ -5,10 +5,10 @@ import nodejs from '@astrojs/node'
 
 // https://astro.build/config
 export default defineConfig({
-  adapter: nodejs({
-    mode: 'middleware' // or 'standalone'
-  }),
-  output: 'hybrid',
+  // adapter: nodejs({
+  //   mode: 'middleware' // or 'standalone'
+  // }),
+  // output: 'hybrid',
   integrations: [tailwind(), mdx()],
   base: '/'
 })
