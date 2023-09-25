@@ -21,7 +21,7 @@ const path = url.pathname
         class='inset-0 object-cover h-auto w-40'
       />
     </a>
-    <ul class='gap-6 hidden items-center lg:flex' id='nav-links'>
+    <ul class='gap-6 hidden items-center lg:flex'>
       <NavList />
       <li class='hidden lg:block'>
         <Button as='a' href='/contacto' active={path === '/contacto'}>
@@ -50,18 +50,6 @@ const path = url.pathname
   let prevScrollY = 0
   const threshold = 150
 
-  const updateNavLink = () => {
-    const hash = window.location.hash
-    const navBar = document.getElementById('nav-links')
-    const navLink = navBar?.querySelectorAll('a')
-    navLink?.forEach((link) => {
-      if (link.dataset.section === hash) {
-        link.classList.add('text-white', 'font-bold')
-        link.classList.remove('text-white/80', 'font-light')
-      }
-    })
-  }
-
   const showNavAfterScrollUp = () => {
     const scrollY = window.scrollY
 
@@ -80,7 +68,26 @@ const path = url.pathname
   }
 
   document.addEventListener('scroll', () => {
-    updateNavLink()
     showNavAfterScrollUp()
+  })
+
+  const hash = window.location.hash
+  const navBar = document.getElementById('nav-container')
+  const navLink = navBar?.querySelectorAll('a')
+  const href = window.location.href
+  const $menuButton = document.getElementById('menu-button')
+
+  navLink?.forEach((link) => {
+    link.addEventListener('click', () => {
+      const isOpen = $menuButton?.classList.contains('open')
+      if (isOpen) {
+        $menuButton?.click()
+      }
+    })
+
+    if (link.dataset.section === hash || href === link.href) {
+      link.classList.add('text-white', 'font-bold')
+      link.classList.remove('text-white/80', 'font-light')
+    }
   })
 </script>
