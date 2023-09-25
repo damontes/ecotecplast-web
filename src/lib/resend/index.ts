@@ -17,7 +17,7 @@ export const sendEmail = async ({
 }: SendEmailParams) => {
   await resend.emails.send({
     from: 'Ecotecplast <no-replay@aretopolis.com>',
-    to: ['m_alejandro@outlook.com'],
+    to: ['mmontes@ecotecplast.com'],
     subject:
       category === CATEGORY.REQUEST_SAMPLE
         ? 'Solicitud de muestra'
