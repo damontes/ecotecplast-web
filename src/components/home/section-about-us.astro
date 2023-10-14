@@ -1,47 +1,55 @@
 ---
+import { Image } from 'astro:assets'
+import valores from '@/images/valores.jpg'
+
 const values = [
   {
-    title: "Responsabilidad",
+    title: 'Responsabilidad',
     description:
-      "Estos valores nos guían en nuestro esfuerzo por crear aditivos efectivos y responsables que contribuyan al éxito de nuestros clientes y al cuidado del planeta",
+      'Estos valores nos guían en nuestro esfuerzo por crear aditivos efectivos y responsables que contribuyan al éxito de nuestros clientes y al cuidado del planeta'
   },
   {
-    title: "Resilencia",
+    title: 'Resilencia',
     description:
-      "Nuestros productos están diseñados para mejorar la durabilidad y la vida útil del plástico, reduciendo así los residuos y promoviendo una mayor resistencia a lo largo del ciclo de vida.",
+      'Nuestros productos están diseñados para mejorar la durabilidad y la vida útil del plástico, reduciendo así los residuos y promoviendo una mayor resistencia a lo largo del ciclo de vida.'
   },
   {
-    title: "Calidad",
+    title: 'Calidad',
     description:
-      "Mantenemos los más altos estándares de calidad en la fabricación de nuestros aditivos, garantizando que cumplan con las expectativas de nuestros clientes y superen los requisitos de la industria.",
+      'Mantenemos los más altos estándares de calidad en la fabricación de nuestros aditivos, garantizando que cumplan con las expectativas de nuestros clientes y superen los requisitos de la industria.'
   },
   {
-    title: "Respeto",
+    title: 'Respeto',
     description:
-      "Valoramos la responsabilidad social y el respeto por las comunidades en las que operamos. Nuestro compromiso es producir aditivos que sean seguros y éticos.",
+      'Valoramos la responsabilidad social y el respeto por las comunidades en las que operamos. Nuestro compromiso es producir aditivos que sean seguros y éticos.'
   },
   {
-    title: "Innovación",
+    title: 'Innovación',
     description:
-      "Estamos en constante búsqueda de nuevas soluciones y tecnologías para mejorar nuestros aditivos y contribuir al avance de la industria del plástico de manera sostenible.",
-  },
-];
+      'Estamos en constante búsqueda de nuevas soluciones y tecnologías para mejorar nuestros aditivos y contribuir al avance de la industria del plástico de manera sostenible.'
+  }
+]
 ---
 
-<section class='py-24'>
+<section class='relative z-10 py-24'>
   <div class='w-full max-w-7xl mx-auto xl:px-8'>
-    <h2
-      class='text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl px-6 xl:px-0'
-    >
-      Nuestra misión
-    </h2>
     <div class='mt-6 flex flex-col gap-x-8 gap-y-20 lg:flex-row px-6 xl:px-0'>
-      <div class='lg:w-full lg:max-w-2xl lg:flex-auto'>
+      <div class='lg:w-full lg:max-w-2xl lg:flex-auto space-y-4'>
+        <h2
+          class='text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl px-6 xl:px-0'
+        >
+          Nuestra misión
+        </h2>
         <p class='text-xl leading-8 text-secondary-600'>
           Maximixar el efecto de los aditivos en los plásticos para eficientar
           los procesos y el producto final de nuestros clientes.
         </p>
-        <div class='mt-10 text-lg max-w-xl leading-7 text-secondary-700'>
+        <h2
+          class='text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl px-6 xl:px-0'
+        >
+          Nuestra visión
+        </h2>
+        <div class='text-xl max-w-xl leading-7 text-secondary-700'>
           <p>
             Ser líderes e innovadores en la industria del plástico fabricando
             aditivos y compuestos que contribuyan en el medio ambiente
@@ -68,15 +76,11 @@ const values = [
         </dl>
       </div>
     </div>
-    <div class='mt-32 sm:mt-40 xl:mx-auto xl:max-w-7xl'>
-      <img
-        src='https://images.unsplash.com/photo-1511632765486-a01980e01a18?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2670&q=80'
-        alt=''
-        class='aspect-[5/2] w-full object-cover xl:rounded-3xl'
-      />
-    </div>
-    <div class='mx-auto mt-32 max-w-7xl px-6 xl:px-0 sm:mt-40'>
-      <div class='mx-auto max-w-3xl lg:mx-0'>
+
+    <div
+      class='flex flex-col gap-y-4 items-center mt-32 sm:mt-40 xl:mx-auto xl:max-w-7xl'
+    >
+      <div class='flex-1 max-w-3xl text-center'>
         <h2
           class='text-3xl font-bold tracking-tight text-secondary-900 sm:text-4xl'
         >
@@ -88,12 +92,19 @@ const values = [
           y al cuidado del planeta
         </p>
       </div>
+      <Image
+        src={valores}
+        alt='Nuestros valores'
+        class='aspect-[5/2] w-full object-cover xl:rounded-3xl object-right'
+      />
+    </div>
+    <div class='mx-auto mt-32 max-w-7xl px-6 xl:px-0 sm:mt-40'>
       <dl
         class='mx-auto mt-16 grid max-w-3xl grid-cols-1 gap-x-12 gap-y-16 text-base leading-7 sm:grid-cols-2 lg:mx-0 lg:max-w-none lg:grid-cols-6'
       >
         {
-          values.map(({ title, description }) => (
-            <div class='col-span-2'>
+          values.map(({ title, description }, idx) => (
+            <div class:list={['col-span-2', idx === 3 ? 'col-start-2' : '']}>
               <dt class='font-semibold text-secondary-900'>{title}</dt>
               <dd class='mt-1 text-gray-600'>{description}</dd>
             </div>

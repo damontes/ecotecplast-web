@@ -5,10 +5,41 @@ import textureMolecures from '@/images/texture_molecules.svg'
 import molecules from '@/images/molecules.svg'
 import { getCollection } from 'astro:content'
 import AdditiveItem from '@/components/AdditiveItem.astro'
+import additiveHeaderIamge from '@/images/aditivos_header.jpg'
+import deslizantePeliculaUno from '@/images/additives/products/deslizante-pelicula-uno.jpg'
+import deslizantePeliculaDos from '@/images/additives/products/deslizante-pelicula-dos.jpg'
+import deslizante from '@/images/additives/products/deslizante.jpg'
 
 const productAdditives = await getCollection('additive-products')
 const processesAdditives = await getCollection('additive-processes')
 export const prerender = true
+
+const sortProductAdditives = productAdditives.sort((a, b) => {
+  const isFirst = a.slug === 'deslizante'
+
+  if (isFirst) {
+    return -1
+  }
+
+  if (a.data.title < b.data.title) {
+    return -1
+  }
+  if (a.data.title > b.data.title) {
+    return 1
+  }
+
+  return 0
+})
+
+const BENEFICIOS_DESLIZNATE = [
+  'Alta transparencia',
+  'Brillo',
+  'Suavidad',
+  'Aplicar la tercera parte de lo que usan actualmente',
+  'Reduce costos por aplicación (0.3%-1.0%)',
+  'Reduce el desgaste mecánico de las máquinas',
+  'Mejora la dispersión del color a utilizar'
+]
 ---
 
 <Layout title='Aditivos' description='Aditivos 100% activos en pellet'>
@@ -23,97 +54,180 @@ export const prerender = true
       alt='Moleculas'
       class='absolute left-0 top-24 h-96 w-auto'
     />
-    <section class='mx-auto max-w-7xl mt-24 py-10 relative space-y-12'>
-      <div class='space-y-4 px-4'>
+    <header
+      class='relative flex items-center justify-center h-96 sm:min-h-[450px] w-full mt-20 overflow-hidden'
+    >
+      <Image
+        src={additiveHeaderIamge}
+        alt='Header Background'
+        class='absolute inset-0 object-cover w-full h-full'
+      />
+      <div class='absolute inset-0 z-10 bg-white/50'></div>
+      <div
+        class='relative flex-1 max-w-7xl m-auto mx-4 sm:mx-8 z-30 flex flex-col lg:flex-row justify-between'
+      >
         <h1
-          class='relative text-primary-500 text-3xl sm:text-7xl font-black text-custom outlined-text-1 uppercase'
+          class='relative text-primary-500 text-4xl sm:text-7xl font-black text-custom outlined-text-1 uppercase'
         >
           aditivos
         </h1>
-        <p class='text-center text-secondary-700 text-xl sm:text-2xl'>
+        <p class='text-center text-secondary-700 text-xl sm:text-2xl max-w-2xl'>
           Todos nuestros aditivos de fabricación son 100% activos en pellet, ya
           que en su formulación de alta concentración solo contiene ingredientes
           activos sin plástico.
         </p>
       </div>
-      <h2
-        class='text-center text-2xl sm:text-4xl text-secondary-700/80 font-black'
+    </header>
+    <section class='sm:mt-12 py-10 relative space-y-12'>
+      <div
+        class='mb-32 grid lg:grid-cols-2 gap-4 px-2 sm:px-6 mx-auto max-w-7xl'
       >
-        Funcionales para tus <span class='text-secondary-700'>productos</span>
-      </h2>
-      <ul
-        role='list'
-        id='additive-products'
-        class='grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 px-4 sm:gap-x-6 lg:grid-cols-4 xl:gap-x-8'
-      >
-        {
-          productAdditives.map(
-            ({ slug, data: { title, description, cover } }) => (
-              <AdditiveItem
-                slug={`additive-products_${slug}`}
-                title={title}
-                description={description}
-                cover={cover}
-              />
+        <div class='cols-span-1 space-y-4'>
+          <h2 class='text-4xl font-bold text-secondary-700'>
+            Deslizante Antibloqueante
+          </h2>
+          <p class='text-lg text-secondary-700'>
+            Nuestro aditivo en pellet genera cambios en las películas de
+            polietileno de baja densidad. Como los que se mencionan a
+            continuación:
+          </p>
+
+          <h3 class='text-2xl font-bold text-secondary-700'>
+            Beneficios en resina virgen y reciclada
+          </h3>
+          <ul class='flex flex-col gap-y-3'>
+            {
+              BENEFICIOS_DESLIZNATE.map((value) => (
+                <li class='flex gap-x-2 items-center text-lg text-secondary-700'>
+                  <svg
+                    xmlns='http://www.w3.org/2000/svg'
+                    class='h-6 w-6 text-primary-600'
+                    width='24'
+                    height='24'
+                    viewBox='0 0 24 24'
+                    stroke-width='2'
+                    stroke='currentColor'
+                    fill='none'
+                    stroke-linecap='round'
+                    stroke-linejoin='round'
+                  >
+                    <path stroke='none' d='M0 0h24v24H0z' fill='none' />
+                    <path
+                      d='M17 3.34a10 10 0 1 1 -14.995 8.984l-.005 -.324l.005 -.324a10 10 0 0 1 14.995 -8.336zm-1.293 5.953a1 1 0 0 0 -1.32 -.083l-.094 .083l-3.293 3.292l-1.293 -1.292l-.094 -.083a1 1 0 0 0 -1.403 1.403l.083 .094l2 2l.094 .083a1 1 0 0 0 1.226 0l.094 -.083l4 -4l.083 -.094a1 1 0 0 0 -.083 -1.32z'
+                      stroke-width='0'
+                      fill='currentColor'
+                    />
+                  </svg>
+                  {value}
+                </li>
+              ))
+            }
+          </ul>
+        </div>
+        <div class='cols-span-1 grid grid-cols-3 rounded-lg overflow-hidden'>
+          <Image
+            src={deslizantePeliculaUno}
+            alt='Header Background'
+            class='object-cover w-full h-full object-center'
+          />
+          <Image
+            src={deslizante}
+            alt='Header Background'
+            class='object-cover w-full h-full object-center'
+          />
+          <Image
+            src={deslizantePeliculaDos}
+            alt='Header Background'
+            class='object-cover w-full h-full object-center'
+          />
+        </div>
+      </div>
+      <div class='w-full py-2 bg-primary-500'>
+        <h4 class='text-center text-2xl text-white'>
+          Maximizando el efecto de los deslizantes antibloqueantes en peliculas
+          plásticas.
+        </h4>
+      </div>
+      <div class='mx-auto max-w-7xl space-y-12'>
+        <h2
+          class='text-center text-2xl sm:text-4xl text-secondary-700/80 font-black'
+        >
+          Funcionales para tus productos
+        </h2>
+        <ul
+          role='list'
+          id='additive-products'
+          class='grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 px-4 sm:gap-x-6 lg:grid-cols-4 xl:gap-x-8'
+        >
+          {
+            sortProductAdditives.map(
+              ({ slug, data: { title, description, cover } }) => (
+                <AdditiveItem
+                  slug={`additive-products_${slug}`}
+                  title={title}
+                  description={description}
+                  cover={cover}
+                />
+              )
             )
-          )
-        }
-      </ul>
-      <h2
-        class='text-center text-2xl sm:text-4xl text-secondary-700/80 font-black'
-      >
-        Funcionales para tus <span class='text-secondary-700'>procesos</span>
-      </h2>
-      <ul
-        role='list'
-        id='additive-processes'
-        class='grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 px-4 sm:gap-x-6 lg:grid-cols-4 xl:gap-x-8'
-      >
-        {
-          processesAdditives.map(
-            ({ slug, data: { title, description, cover } }) => (
-              <AdditiveItem
-                slug={`additive-processes_${slug}`}
-                title={title}
-                description={description}
-                cover={cover}
-              />
+          }
+        </ul>
+        <h2
+          class='text-center text-2xl sm:text-4xl text-secondary-700/80 font-black'
+        >
+          Funcionales para tus procesos
+        </h2>
+        <ul
+          role='list'
+          id='additive-processes'
+          class='grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 px-4 sm:gap-x-6 lg:grid-cols-4 xl:gap-x-8'
+        >
+          {
+            processesAdditives.map(
+              ({ slug, data: { title, description, cover } }) => (
+                <AdditiveItem
+                  slug={`additive-processes_${slug}`}
+                  title={title}
+                  description={description}
+                  cover={cover}
+                />
+              )
             )
-          )
-        }
-      </ul>
+          }
+        </ul>
+      </div>
     </section>
   </main>
-</Layout>
 
-<script>
-  const productList =
-    document
-      .getElementById('additive-products')
-      ?.getElementsByTagName('button') ?? []
-  const processList =
-    document
-      .getElementById('additive-processes')
-      ?.getElementsByTagName('button') ?? []
+  <script>
+    const productList =
+      document
+        .getElementById('additive-products')
+        ?.getElementsByTagName('button') ?? []
+    const processList =
+      document
+        .getElementById('additive-processes')
+        ?.getElementsByTagName('button') ?? []
 
-  Array.from([...productList, ...processList]).forEach((element) => {
-    element?.addEventListener('click', async (e) => {
-      const item = (e.target as HTMLElement).closest('li')
-      const slug = item?.getAttribute('data-slug') ?? ''
+    Array.from([...productList, ...processList]).forEach((element) => {
+      element?.addEventListener('click', async (e) => {
+        const item = (e.target as HTMLElement).closest('li')
+        const slug = item?.getAttribute('data-slug') ?? ''
 
-      const dialog = document.getElementById(slug) as HTMLDialogElement
-      dialog?.showModal()
+        const dialog = document.getElementById(slug) as HTMLDialogElement
+        dialog?.showModal()
+      })
     })
-  })
-</script>
-<style>
-  .outlined-text-1::before {
-    content: 'aditivos';
-    -webkit-text-stroke-width: 1px;
-    -webkit-text-stroke-color: #74bc1f;
-    color: transparent;
-    position: absolute;
-    left: -5px;
-    top: -2px;
-  }
-</style>
+  </script>
+  <style>
+    .outlined-text-1::before {
+      content: 'aditivos';
+      -webkit-text-stroke-width: 1px;
+      -webkit-text-stroke-color: #74bc1f;
+      color: transparent;
+      position: absolute;
+      left: -5px;
+      top: -2px;
+    }
+  </style>
+</Layout>

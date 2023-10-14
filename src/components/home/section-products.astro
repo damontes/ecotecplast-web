@@ -1,12 +1,26 @@
 ---
 import { Image } from 'astro:assets'
-import reciclado from '@/images/section-products/reciclado.jpg'
-import inyeccion from '@/images/section-products/inyeccion.jpg'
-import purga from '@/images/section-products/purga.jpg'
-import pelicula from '@/images/section-products/pelicula.jpg'
+import reciclado from '@/images/colors/green.jpg'
+import purga from '@/images/e-purge/purga-tres.jpg'
+import inyeccion from '@/images/additives/processes/desmoldante.jpg'
+import colors from '@/images/colors/yellow.jpg'
+
 import molecules from '@/images/molecules.svg'
 
 const CARDS = [
+  {
+    title: 'INYECCIÓN Y EXTRUSIÓN',
+    image: inyeccion,
+    items: [
+      'Antiestáticos',
+      'Filtros UV',
+      'Clarificantes',
+      'Antibacteriales',
+      'VCI anticorrosivo',
+      'Disipativos conductivos',
+      'Retardantes de flama'
+    ]
+  },
   {
     title: 'RECICLADOS',
     image: reciclado,
@@ -14,32 +28,33 @@ const CARDS = [
       'Colores 100% Activos',
       'Modificador de Fluidez',
       'Antioxidante',
-      'Clarificante para Polipropileno',
-      'Desmoldante',
-      'Modificador de Impacto'
+      'Deslizantes antibloqueantes',
+      'Abrillantador óptico',
+      'Modificador de impacto',
+      'Absorvedor de olor'
     ]
   },
   {
-    title: 'INYECCIÓN',
-    image: inyeccion,
-    items: [
-      'Antibacteriales',
-      'Disipativos',
-      'Conductivos',
-      'Antiestáticos ESD',
-      'Retardantes de flama para construcción',
-      'Colores de Especialidad'
-    ]
-  },
-  {
-    title: 'PURGA',
+    title: 'LIMPIEZA',
     image: purga,
-    items: ['Purga PBW Fast Clean', 'Purga PBW']
+    items: [
+      'Purgas para inyección',
+      'Purgas para extrusión',
+      'Cambio de color',
+      'Cambios de material'
+    ]
   },
   {
-    title: 'PELÍCULA',
-    image: pelicula,
-    items: ['Empaque', 'Bolsa', 'Strech Film', 'Agricultura', 'Termoencogible']
+    title: 'COLORES',
+    image: colors,
+    items: [
+      'Colores 100% activos',
+      'Monopigmentos',
+      'Fluorecentes',
+      'Blancos',
+      'Negros',
+      'Metalizados'
+    ]
   }
 ]
 ---
@@ -65,6 +80,11 @@ const CARDS = [
          dentro de nuestros procesos y productos.
       </p>
     </div>
+    <h5
+      class='relative text-secondary-700 text-xl sm:text-3xl font-black text-custom outlined-text-1 text-center uppercase'
+    >
+      Aditivos para:
+    </h5>
     <div
       class='grid sm:grid-cols-2 xl:grid-cols-4 w-full mx-auto gap-4 place-content-center px-4'
     >

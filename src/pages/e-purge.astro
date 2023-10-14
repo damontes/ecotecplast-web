@@ -1,11 +1,13 @@
 ---
 import Layout from '@/layouts/Layout.astro'
 import { Image } from 'astro:assets'
-import purgaHusillo from '@/images/e-purge/purga-husillo.jpg'
-import purgaColor from '@/images/e-purge/purga-uno.jpg'
+
 import purga from '@/images/e-purge/purga-dos.jpg'
 import EPurgeBenefitItem from '@/components/EPurgeBenefitItem.astro'
 import molecules from '@/images/molecules.svg'
+import purgaNoBg from '@/images/purga_no_bg.png'
+import purgaHorizontal from '@/images/purga_horizontal.jpg'
+
 import RequestProductForm from '@/components/RequestProductForm.astro'
 import { PRODUCT } from '@/const'
 
@@ -38,18 +40,37 @@ export const prerender = true
   title='E-Purge'
   description='Es un compuesto purgante para limpiar máquinas de moldeo termoplásticas utilizadas en diversos procesos de fabricación de plástico, como la inyección, soplado y extrusión.'
 >
-  <section class='w-full max-w-7xl mx-auto min-h-screen mt-24 py-10 px-4'>
+  <header
+    class='relative flex items-center justify-center h-96 sm:min-h-[450px] w-full mt-20 overflow-hidden'
+  >
+    <Image
+      src={purga}
+      alt='Header Background'
+      class='absolute inset-0 object-cover w-full h-full'
+    />
+    <div class='absolute inset-0 z-10 bg-white/60'></div>
+    <div
+      class='relative flex-1 max-w-7xl m-auto mx-4 sm:mx-8 z-30 flex flex-col lg:flex-row justify-between items-center'
+    >
+      <h1
+        class='relative text-primary-500 text-6xl sm:text-7xl font-black text-custom outlined-text-1 uppercase'
+      >
+        E-PURGE
+      </h1>
+      <Image
+        src={purgaNoBg}
+        alt='Purga color azul'
+        class='h-64 sm:h-96 w-auto -z-10'
+      />
+    </div>
+  </header>
+  <section class='w-full min-h-screen sm:mt-24 py-10'>
     <Image
       src={molecules}
       alt='Moleculas'
-      class='absolute left-0 top-1/4 h-96 sm:h-1/2 w-auto aspect-square -z-10'
+      class='absolute left-0 top-1/4 h-96 sm:h-1/2 w-auto -z-10'
     />
-    <h1
-      class='relative text-primary-500 text-3xl sm:text-7xl font-black text-custom outlined-text-1'
-    >
-      E-PURGE
-    </h1>
-    <div class='grid lg:grid-cols-5 mt-4 gap-4'>
+    <div class='grid lg:grid-cols-5 mt-4 gap-4 max-w-7xl mx-auto px-4'>
       <div class='col-span-2 flex flex-col items-start gap-y-4'>
         <p class='text-secondary-700 text-xl leading-7'>
           Es un compuesto purgante a base de principios químicos y mecánicos,
@@ -66,64 +87,30 @@ export const prerender = true
         </a>
       </div>
       <div class='w-full col-span-3'>
-        <div
-          class='sm:-m-2 rounded-xl bg-gray-900/5 p-2 ring-1 ring-inset ring-gray-900/10 lg:-m-4 lg:rounded-2xl lg:p-4 overflow-hidden'
-        >
-          <Image
-            src='/grafica_e-purge.jpg'
-            alt='App screenshot'
-            width='2432'
-            height='1442'
-            class='rounded-md shadow-2xl ring-1 ring-gray-900/10'
-          />
-        </div>
+        <Image
+          src='/grafica_e-purge.jpg'
+          alt='Grafica E-Purge'
+          width='2432'
+          height='1442'
+          class='rounded-md shadow-2xl ring-1 ring-gray-900/10 w-full'
+        />
       </div>
     </div>
-
-    <div
-      class='w-full h-[456px] xl:h-[532px] grid mx-auto max-w-6xl sm:grid-cols-7 mt-12 sm:mt-24 rounded-lg overflow-auto gap-3 relative'
-    >
-      <div class='hidden sm:grid col-span-3 grid-rows-3 gap-3'>
-        <div
-          class='row-span-2 left-item bg-primary-500 overflow-hidden relative'
-        >
-          <Image
-            src={purgaHusillo}
-            alt='Purga Husillo'
-            class='object-cover absolute inset-0 aspect-square'
-          />
-        </div>
-        <div class='row-span-1 bg-white max-w-[80%] overflow-hidden relative'>
-          <Image
-            src={purgaColor}
-            alt='Purga'
-            class='object-cover absolute inset-0 aspect-video'
-          />
-        </div>
-      </div>
-      <div
-        class='sm:col-span-4 right-item bg-white rounded-md overflow-hidden flex py-12 px-4 xl:px-16 items-center'
+    <div class='mt-24 space-y-6'>
+      <h2
+        class='text-center text-3xl font-bold tracking-tight text-secondary-700 sm:text-4xl'
       >
-        <div class='-translate-y-24 sm:-translate-y-16 relative w-full h-fit'>
-          <h2
-            class='text-5xl text-secondary-700 font-black max-w-xs text-center'
-          >
-            Una limpieza es clave
-          </h2>
-          <p
-            class='lg:absolute text-primary-500 text-2xl font-semibold right-4 top-12 max-w-xs text-right'
-          >
-            para una producción continua
-          </p>
-        </div>
-      </div>
-      <div
-        class='absolute rounded-lg overflow-hidden left-0 sm:left-[35%] w-[70%] h-auto sm:w-[27%] bottom-0'
-      >
-        <Image src={purga} alt='Purga' class='object-contain h-full w-full' />
-      </div>
+        Una limpieza es clave para una producción continua
+      </h2>
+      <Image
+        src={purgaHorizontal}
+        alt='Purga negro a blanco'
+        width='1920'
+        height='493'
+        class='w-full h-auto'
+      />
     </div>
-    <div class='mx-auto mt-32 max-w-7xl px-6 sm:mt-48 lg:px-8 relative'>
+    <div class='mx-auto mt-12 max-w-7xl px-6 sm:mt-24 lg:px-8 relative'>
       <div class='mx-auto max-w-2xl lg:text-center'>
         <p
           class='mt-2 text-3xl font-bold tracking-tight text-secondary-700 sm:text-4xl'
