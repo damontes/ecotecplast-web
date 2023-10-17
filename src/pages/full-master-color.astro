@@ -37,17 +37,14 @@ export const prerender = true
       class='relative flex items-center justify-center h-96 sm:min-h-[450px] w-full mt-20'
     >
       <video
-        src='/colors.mp4'
         class='absolute inset-0 object-cover w-full h-full'
         autoplay
         loop
         muted
-        poster='/colors.webp'></video>
-      <img
-        src='/colors.mp4'
-        alt='Aditivos para plasticos'
-        class='absolute inset-0 object-cover w-full h-full'
-      />
+        poster='/colors.webp'
+      >
+        <source src='/colors.mp4' type='video/mp4' />
+      </video>
       <div class='absolute inset-0 z-10 bg-black/10'></div>
       <div class='relative flex-1 max-w-7xl m-auto mx-4 sm:mx-8'>
         <div
