@@ -1,12 +1,18 @@
 ---
-
+import { Image } from 'astro:assets'
 ---
 
 <footer class='bg-secondary-900' aria-labelledby='footer-heading'>
   <h2 id='footer-heading' class='sr-only'>Footer</h2>
   <div class='mx-auto max-w-7xl px-6 pb-8 pt-16 sm:pt-24 lg:px-8 lg:pt-32'>
     <div class='md:grid lg:grid-cols-2 md:gap-8'>
-      <img class='h-12' src='/logo.png' alt='Company name' />
+      <Image
+        class='h-12'
+        src='/logo.webp'
+        alt='Ecotecplast Logo'
+        width='160'
+        height='40'
+      />
       <div class='mt-16 grid grid-cols-1 gap-8 md:col-span-1 md:mt-0'>
         <div class='md:grid md:grid-cols-2 md:gap-8'>
           <div>

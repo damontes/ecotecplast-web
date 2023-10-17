@@ -3,6 +3,7 @@ import Button from './Button.astro'
 import MenuButton from './MenuButton.astro'
 import Slider from './Slider.astro'
 import NavList from './NavList.astro'
+import { Image } from 'astro:assets'
 const { url } = Astro
 const path = url.pathname
 ---
@@ -15,8 +16,8 @@ const path = url.pathname
     class='mx-auto flex flex-row items-center justify-between max-w-7xl py-4 px-8 lg:px-2'
   >
     <a href='/' class='mr-auto'>
-      <img
-        src='/logo.png'
+      <Image
+        src='/logo.webp'
         alt='Ecotecplast Logo'
         class='inset-0 object-cover h-auto w-40'
         width='160'
