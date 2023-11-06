@@ -100,11 +100,11 @@ const values = [
     </div>
     <div class='mx-auto mt-32 max-w-7xl px-6 xl:px-0 sm:mt-40'>
       <dl
-        class='mx-auto mt-16 grid max-w-3xl grid-cols-1 gap-x-12 gap-y-16 text-base leading-7 sm:grid-cols-2 lg:mx-0 lg:max-w-none lg:grid-cols-6'
+        class='mx-auto mt-16 grid max-w-3xl grid-cols-1 sm:gap-x-12 gap-y-16 text-base leading-7 sm:grid-cols-2 lg:mx-0 lg:max-w-none lg:grid-cols-6'
       >
         {
           values.map(({ title, description }, idx) => (
-            <div class:list={['col-span-2', idx === 3 ? 'col-start-2' : '']}>
+            <div class:list={['col-span-2', idx === 3 ? 'lg:col-start-2' : '']}>
               <dt class='font-semibold text-secondary-900'>{title}</dt>
               <dd class='mt-1 text-gray-600'>{description}</dd>
             </div>
