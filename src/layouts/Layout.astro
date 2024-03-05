@@ -1,7 +1,8 @@
 ---
 import Navigation from '../components/Navigation.astro'
 import Footer from '../components/Footer.astro'
-import Slider from '@/components/Slider.astro'
+import '@fontsource-variable/montserrat'
+
 interface Props {
   title: string
   description: string
@@ -67,12 +68,9 @@ const image = 'https://ecotecplast.com/logo.png'
       white 60%
     );
   }
-  @font-face {
-    font-family: 'Monsterrat';
-    src: url('/fonts/Monsterrat.ttf') format('truetype');
-  }
+
   html {
-    font-family: system-ui, sans-serif;
+    font-family: 'Montserrat Variable', sans-serif;
     background: #d5e5d7;
     scroll-behavior: smooth;
   }
