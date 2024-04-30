@@ -1,17 +1,17 @@
 ---
-import { Image } from "astro:assets";
-import Dialog from "./Dialog.astro";
-import { getEntry } from "astro:content";
-import ListItem from "./ListItem.astro";
-import List from "./List.astro";
-import Subtitle from "./Subtitle.astro";
+import { Image } from 'astro:assets'
+import Dialog from './Dialog.astro'
+import { getEntry } from 'astro:content'
+import ListItem from './ListItem.astro'
+import List from './List.astro'
+import Subtitle from './Subtitle.astro'
 
-const { slug, title, description, cover } = Astro.props;
+const { slug, title, description, cover } = Astro.props
 
-const [folder, product] = slug.split("_");
+const [folder, product] = slug.split('_')
 
-const markdown: any = await getEntry(folder, product);
-const { Content } = await markdown.render();
+const markdown: any = await getEntry(folder, product)
+const { Content } = await markdown.render()
 ---
 
 <li

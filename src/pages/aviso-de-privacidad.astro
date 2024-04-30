@@ -1,0 +1,19 @@
+---
+import Layout from '../layouts/Layout.astro'
+import { Content } from '@/components/aviso-de-privacidad.mdx'
+import ListItem from '@/components/ListItem.astro'
+import List from '@/components/List.astro'
+import Subtitle from '@/components/Subtitle.astro'
+import Link from '@/components/Link.astro'
+---
+
+<Layout
+  title='Aviso de Privacidad'
+  description='Aviso de Privacidad de la empresa Ecotecplast S.A. de C.V.'
+>
+  <main
+    class='min-h-screen w-full max-w-4xl mx-auto my-32 text-pretty underline-links'
+  >
+    <Content components={{ ul: List, li: ListItem, h3: Subtitle, a: Link }} />
+  </main>
+</Layout>
