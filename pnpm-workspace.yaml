@@ -1,3 +1,2 @@
-approveBuilds: '["esbuild","sharp"]'
-
-onlyBuiltDependencies: '["esbuild","sharp"]'
+packages:
+  - '.'
