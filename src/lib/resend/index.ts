@@ -1,8 +1,5 @@
 import { CATEGORY, PRODUCT_NAME, LABEL_NAME } from '@/const'
 import { Resend } from 'resend'
-const resendKey = import.meta.env.RESEND_API_KEY
-
-const resend = new Resend(resendKey)
 
 interface SendEmailParams {
   category: string
@@ -15,8 +12,9 @@ export const sendEmail = async ({
   product,
   payload
 }: SendEmailParams) => {
+  const resend = new Resend(import.meta.env.RESEND_API_KEY)
   await resend.emails.send({
-    from: 'Ecotecplast <no-replay@aretopolis.com>',
+    from: 'Ecotecplast <no-reply@ecotecplast.mx>',
     to: ['mmontes@ecotecplast.com'],
     subject:
       category === CATEGORY.REQUEST_SAMPLE
