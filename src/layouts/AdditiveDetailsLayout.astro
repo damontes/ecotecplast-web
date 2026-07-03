@@ -10,7 +10,7 @@ const images = import.meta.glob<ImageMetadata>("../images/additives/*/*", {
 const imageSrc = await images[`../images/additives/${frontmatter.image}`]?.();
 ---
 
-<html>
+<html lang='es'>
   {imageSrc && <Image src={imageSrc} alt={frontmatter.title} />}
   <div class='py-6 px-4'>
     <div class='mb-6 space-y-2'>

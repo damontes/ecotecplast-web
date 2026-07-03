@@ -2,6 +2,7 @@
 import Navigation from '../components/Navigation.astro'
 import Footer from '../components/Footer.astro'
 import '@fontsource-variable/montserrat'
+import '../styles/global.css'
 
 interface Props {
   title: string
@@ -22,13 +23,13 @@ const ogImage = image ?? 'https://ecotecplast.com/logo.png'
 
     <meta name='description' content={description} />
     <meta name='keywords' content='aditivos, plastico, colores, pellet, masterbatch, purgante' />
-    <meta name='og:image' content={ogImage} />
-    <meta name='og:title' content={title} />
-    <meta name='og:description' content={description} />
-    <meta name='og:url' content={canonical} />
-    <meta name='og:site_name' content='Ecotecplast' />
-    <meta name='og:type' content='website' />
-    <meta name='og:locale' content='es_ES' />
+    <meta property='og:image' content={ogImage} />
+    <meta property='og:title' content={title} />
+    <meta property='og:description' content={description} />
+    <meta property='og:url' content={canonical} />
+    <meta property='og:site_name' content='Ecotecplast' />
+    <meta property='og:type' content='website' />
+    <meta property='og:locale' content='es_MX' />
 
     <meta name='twitter:card' content='summary_large_image' />
     <meta name='twitter:title' content={title} />
@@ -45,23 +46,30 @@ const ogImage = image ?? 'https://ecotecplast.com/logo.png'
     <script type='application/ld+json'>
       {
         "@context": "https://schema.org",
-        "@type": "Organization",
+        "@type": "LocalBusiness",
         "name": "Ecotecplast",
         "url": "https://ecotecplast.com",
         "logo": "https://ecotecplast.com/logo.png",
-        "contactPoint": {
-          "@type": "ContactPoint",
-          "telephone": "+52-55-4089-2011",
-          "contactType": "customer service",
-          "availableLanguage": "Spanish"
-        },
+        "image": "https://ecotecplast.com/logo.png",
+        "description": "Fabricante de aditivos, masterbatch y purgantes para la industria del plástico en México.",
+        "telephone": "+52-55-4089-2011",
+        "email": "mmontes@ecotecplast.com",
         "address": {
           "@type": "PostalAddress",
           "streetAddress": "Andrés Tutino #17, Barrio San Miguel",
-          "addressLocality": "CDMX",
+          "addressLocality": "Ciudad de México",
           "postalCode": "09360",
           "addressCountry": "MX"
-        }
+        },
+        "geo": {
+          "@type": "GeoCoordinates",
+          "latitude": "19.3547",
+          "longitude": "-99.1066"
+        },
+        "sameAs": [
+          "https://www.facebook.com/profile.php?id=100083351170348",
+          "https://www.linkedin.com/company/ecotecplast-sa-de-cv/"
+        ]
       }
     </script>
 

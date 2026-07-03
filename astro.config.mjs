@@ -1,7 +1,6 @@
 import { defineConfig } from 'astro/config'
 import mdx from '@astrojs/mdx'
-import tailwind from '@astrojs/tailwind'
-import vercel from '@astrojs/vercel/serverless'
+import vercel from '@astrojs/vercel'
 import sitemap from '@astrojs/sitemap'
 
 // https://astro.build/config
@@ -13,6 +12,6 @@ export default defineConfig({
     }
   }),
   site: 'https://ecotecplast.com',
-  integrations: [tailwind(), mdx(), sitemap()],
+  integrations: [mdx(), sitemap()],
   base: '/'
 })

@@ -15,7 +15,7 @@ const processesAdditives = await getCollection('additive-processes')
 export const prerender = true
 
 const sortProductAdditives = productAdditives.sort((a, b) => {
-  const isFirst = a.slug === 'deslizante'
+  const isFirst = a.id === 'deslizante'
 
   if (isFirst) {
     return -1
@@ -164,9 +164,9 @@ const BENEFICIOS_DESLIZNATE = [
         >
           {
             sortProductAdditives.map(
-              ({ slug, data: { title, description, cover } }) => (
+              ({ id, data: { title, description, cover } }) => (
                 <AdditiveItem
-                  slug={`additive-products_${slug}`}
+                  slug={`additive-products_${id}`}
                   title={title}
                   description={description}
                   cover={cover}
@@ -187,9 +187,9 @@ const BENEFICIOS_DESLIZNATE = [
         >
           {
             processesAdditives.map(
-              ({ slug, data: { title, description, cover } }) => (
+              ({ id, data: { title, description, cover } }) => (
                 <AdditiveItem
-                  slug={`additive-processes_${slug}`}
+                  slug={`additive-processes_${id}`}
                   title={title}
                   description={description}
                   cover={cover}
