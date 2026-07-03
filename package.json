@@ -3,7 +3,7 @@
   "type": "module",
   "version": "0.0.1",
   "engines": {
-    "node": "24.x"
+    "node": ">=20.x"
   },
   "scripts": {
     "dev": "astro dev",
@@ -13,14 +13,13 @@
     "astro": "astro"
   },
   "dependencies": {
-    "@astrojs/mdx": "^1.1.0",
-    "@astrojs/node": "^6.0.1",
+    "@astrojs/mdx": "^3.0.0",
     "@astrojs/sitemap": "^3.1.0",
-    "@astrojs/tailwind": "^5.0.0",
-    "@astrojs/vercel": "^5.0.1",
+    "@astrojs/tailwind": "^5.1.0",
+    "@astrojs/vercel": "^7.0.0",
     "@fontsource-variable/montserrat": "^5.0.18",
     "@tailwindcss/forms": "^0.5.6",
-    "astro": "^3.0.13",
+    "astro": "^4.0.0",
     "resend": "^1.1.0",
     "sharp": "^0.32.5",
     "tailwindcss": "^3.4.1",
