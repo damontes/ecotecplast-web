@@ -9,13 +9,12 @@ interface RequestBody {
   client_id?: number | null
   carrier_polymer?: string | null
   masterbatch_ids?: number[]
-  // Named QC tolerance chosen by the operator (1.0 / 1.5 / 2.0). Anything
-  // else is rejected — the company's ceiling is 2.0 and we don't want
-  // free-form drift.
+  // Named QC tolerance chosen by the operator (1.0 / 1.5 / 2.0 / 4.0).
+  // Anything else is rejected — we don't want free-form drift.
   pass_threshold?: number
 }
 
-const ALLOWED_TOLERANCES = new Set([1.0, 1.5, 2.0])
+const ALLOWED_TOLERANCES = new Set([1.0, 1.5, 2.0, 4.0])
 
 // Suggestion caps per section on the failure screen.
 //

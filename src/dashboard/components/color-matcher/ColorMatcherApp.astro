@@ -102,6 +102,7 @@ import MatchFailure from '@/dashboard/components/color-matcher/MatchFailure.astr
     if (tol === 1.0) return 'Estricta'
     if (tol === 1.5) return 'Estándar'
     if (tol === 2.0) return 'Comercial'
+    if (tol === 4.0) return 'Amplia'
     return `ΔE ≤ ${tol?.toFixed(1) ?? '?'}`
   }
 
