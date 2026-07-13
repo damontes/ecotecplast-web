@@ -1,0 +1,66 @@
+---
+import Card from '@/dashboard/components/ui/Card.astro'
+import TextField from '@/dashboard/components/ui/TextField.astro'
+import SelectField from '@/dashboard/components/ui/SelectField.astro'
+import TextareaField from '@/dashboard/components/ui/TextareaField.astro'
+import NumberField from '@/dashboard/components/ui/NumberField.astro'
+
+interface ProviderRow {
+  id: number
+  name: string
+}
+
+interface Props {
+  providers: ProviderRow[]
+}
+
+const { providers } = Astro.props
+
+const providerOptions = providers.map((p) => ({ value: String(p.id), label: p.name }))
+
+const polymers = [
+  { value: 'pe', label: 'PE (LDPE/LLDPE)' },
+  { value: 'hdpe', label: 'HDPE' },
+  { value: 'pp', label: 'PP (Polipropileno)' },
+  { value: 'pet', label: 'PET' },
+  { value: 'abs', label: 'ABS' }
+]
+---
+
+<Card title='Identidad del Masterbatch' eyebrow='Inventario'>
+  <div class='space-y-4'>
+    <TextField id='product-name' label='Nombre del producto' placeholder='ej. Ultra Blue Prime' />
+
+    <div class='grid grid-cols-2 gap-4'>
+      <SelectField
+        id='brand-supplier'
+        label='Proveedor'
+        options={providerOptions}
+        value={providerOptions[0]?.value ?? ''}
+      />
+      <TextField id='supplier-sku' label='SKU del proveedor' placeholder='MB-1002-X' />
+    </div>
+
+    <div class='grid grid-cols-2 gap-4'>
+      <TextField id='color-index' label='Índice de color' placeholder='P.B. 15:3' />
+      <SelectField id='base-carrier' label='Polímero portador' options={polymers} value='pe' />
+    </div>
+
+    <NumberField id='stock-level' label='Stock actual (kg)' placeholder='0.0' step='0.1' />
+
+    <TextareaField
+      id='internal-notes'
+      label='Notas internas'
+      placeholder='Observaciones de control de calidad, instrucciones de manejo…'
+      rows={4}
+    />
+
+    <button
+      type='submit'
+      data-submit-masterbatch
+      class='inline-flex w-full items-center justify-center gap-2 rounded-lg bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-700 focus:ring-offset-2'
+    >
+      Guardar en la base de datos
+    </button>
+  </div>
+</Card>

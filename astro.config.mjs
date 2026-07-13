@@ -6,6 +6,9 @@ import sitemap from '@astrojs/sitemap'
 // https://astro.build/config
 export default defineConfig({
   output: 'server',
+  prefetch: {
+    prefetchAll: true
+  },
   adapter: vercel({
     webAnalytics: {
       enabled: true

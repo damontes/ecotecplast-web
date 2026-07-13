@@ -1,0 +1,387 @@
+---
+import DashboardLayout from '@/dashboard/layouts/DashboardLayout.astro'
+import Card from '@/dashboard/components/ui/Card.astro'
+---
+
+{/* Auto-derived breadcrumbs: Clientes › {client name} › Trabajos › {job identifier}.
+    breadcrumbLabels is populated at runtime by the script below via a
+    small hack: we reload with a query param, or we override via JS after
+    fetch. For the initial render we pass simple defaults; the script
+    updates document.title after fetch. Auto-labels ('jobs' → 'Jobs') get
+    a Spanish translation via the map here. */}
+<DashboardLayout
+  title='Trabajo'
+  active='clients'
+  breadcrumbLabels={{ jobs: 'Trabajos' }}
+  breadcrumbSkipSegments={['jobs']}
+>
+  {/* Skeleton header */}
+  <div id='job-header' class='mb-6'>
+    <div class='h-4 w-32 animate-pulse rounded bg-slate-200' />
+    <div class='mt-2 h-7 w-48 animate-pulse rounded bg-slate-200' />
+    <div class='mt-2 h-4 w-64 animate-pulse rounded bg-slate-200' />
+  </div>
+
+  {/* Status band skeleton */}
+  <div id='status-band' class='mb-5 h-24 animate-pulse rounded-lg bg-slate-200' />
+
+  {/* Color chips skeleton */}
+  <div id='color-chips' class='mb-6 grid gap-4 sm:grid-cols-2'>
+    <div class='rounded-lg ring-1 ring-slate-200 overflow-hidden'>
+      <div class='h-32 animate-pulse bg-slate-200' />
+      <div class='p-2'><div class='h-3 w-32 animate-pulse rounded bg-slate-200' /></div>
+    </div>
+    <div class='rounded-lg ring-1 ring-slate-200 overflow-hidden'>
+      <div class='h-32 animate-pulse bg-slate-200' />
+      <div class='p-2'><div class='h-3 w-32 animate-pulse rounded bg-slate-200' /></div>
+    </div>
+  </div>
+
+  {/* Result body — replaced after fetch */}
+  <div id='result-body'></div>
+</DashboardLayout>
+
+<script>
+  interface RecipeItem {
+    masterbatch_id: number
+    sku: string
+    product_name: string
+    provider?: string
+    percentage: number
+  }
+  interface Suggestion {
+    id: number
+    palette: string
+    code: string
+    name: string
+    lab: [number, number, number]
+    delta_e_to_target: number
+    reachable_now: boolean
+    recipe: RecipeItem[] | null
+  }
+  interface CalculatedRecipe {
+    success: boolean
+    final_delta_e: number
+    target_coordinates: [number, number, number]
+    predicted_coordinates?: [number, number, number]
+    closest_achievable_coordinates?: [number, number, number]
+    recipe?: RecipeItem[]
+    message?: string
+    suggestions?: Suggestion[]
+  }
+  interface Job {
+    id: number
+    job_identifier: string | null
+    client_id: number | null
+    carrier_polymer_used: string | null
+    pass_threshold_used: number | null
+    base_l: number | null
+    base_a: number | null
+    base_b: number | null
+    target_l: number | null
+    target_a: number | null
+    target_b: number | null
+    calculated_recipe: CalculatedRecipe | null
+    final_delta_e: number | null
+    is_success: boolean
+    created_at: string
+    clients: { id: number; name: string } | { id: number; name: string }[] | null
+  }
+
+  document.addEventListener('astro:page-load', () => {
+    // URL guard — see comment on clients/[id].astro for why.
+    if (!/^\/dashboard\/clients\/\d+\/jobs\/\d+\/?$/.test(window.location.pathname)) return
+    const parts = window.location.pathname.replace(/\/$/, '').split('/')
+    const jobId = Number(parts[parts.length - 1])
+    const clientId = Number(parts[parts.length - 3])
+    if (!Number.isFinite(jobId) || !Number.isFinite(clientId)) return
+
+    const headerEl = document.getElementById('job-header') as HTMLDivElement
+    const statusEl = document.getElementById('status-band') as HTMLDivElement
+    const chipsEl = document.getElementById('color-chips') as HTMLDivElement
+    const bodyEl = document.getElementById('result-body') as HTMLDivElement
+
+    const toleranceLabel = (tol: number | null): string => {
+      if (tol === 1.0) return 'Estricta'
+      if (tol === 1.5) return 'Estándar'
+      if (tol === 2.0) return 'Comercial'
+      return `ΔE ≤ ${tol?.toFixed(1) ?? '?'}`
+    }
+
+    const labToRgbCss = (lab: [number, number, number]): string => {
+      const [L, a, b] = lab
+      const fy = (L + 16) / 116
+      const fx = a / 500 + fy
+      const fz = fy - b / 200
+      const eps = 216 / 24389
+      const kappa = 24389 / 27
+      const xr = fx ** 3 > eps ? fx ** 3 : (116 * fx - 16) / kappa
+      const yr = L > 8 ? fy ** 3 : L / kappa
+      const zr = fz ** 3 > eps ? fz ** 3 : (116 * fz - 16) / kappa
+      const X = xr * 0.95047
+      const Y = yr * 1.0
+      const Z = zr * 1.08883
+      let r = X * 3.2406 + Y * -1.5372 + Z * -0.4986
+      let g = X * -0.9689 + Y * 1.8758 + Z * 0.0415
+      let bl = X * 0.0557 + Y * -0.204 + Z * 1.057
+      const toSrgb = (c: number) =>
+        c <= 0.0031308 ? 12.92 * c : 1.055 * Math.pow(Math.max(0, c), 1 / 2.4) - 0.055
+      r = Math.round(Math.min(1, Math.max(0, toSrgb(r))) * 255)
+      g = Math.round(Math.min(1, Math.max(0, toSrgb(g))) * 255)
+      bl = Math.round(Math.min(1, Math.max(0, toSrgb(bl))) * 255)
+      return `rgb(${r}, ${g}, ${bl})`
+    }
+
+    const clientName = (j: Job): string => {
+      const c = j.clients
+      if (!c) return ''
+      if (Array.isArray(c)) return c[0]?.name ?? ''
+      return c.name ?? ''
+    }
+
+    fetch(`/api/jobs/${jobId}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.error || !data.job) {
+          window.location.href = `/dashboard/clients/${clientId}`
+          return
+        }
+        const j = data.job as Job
+        const success = j.is_success
+        const target: [number, number, number] = [j.target_l ?? 0, j.target_a ?? 0, j.target_b ?? 0]
+        const base: [number, number, number] = [j.base_l ?? 0, j.base_a ?? 0, j.base_b ?? 0]
+        const dE = j.final_delta_e ?? 0
+        const tol = j.pass_threshold_used
+
+        document.title = `${j.job_identifier ?? j.id} · ${clientName(j)} · ColorHub`
+
+        // Swap the raw IDs in the breadcrumb for human-readable labels.
+        const cName = clientName(j)
+        const jobLabel = j.job_identifier ?? String(j.id)
+        const bcClient = document.querySelector(`[data-breadcrumb-segment="${clientId}"]`)
+        if (bcClient && cName) bcClient.textContent = cName
+        const bcJob = document.querySelector(`[data-breadcrumb-segment="${jobId}"]`)
+        if (bcJob) bcJob.textContent = jobLabel
+
+        const dt = new Date(j.created_at)
+        const dtStr = dt.toLocaleString('es-MX', { dateStyle: 'medium', timeStyle: 'short' })
+
+        headerEl.innerHTML = `
+          <div class='text-[10px] font-semibold uppercase tracking-widest text-slate-400'>
+            Ecotecplast ColorHub
+          </div>
+          <h1 class='text-2xl font-bold text-slate-900'>
+            Trabajo <span class='font-mono'>${j.job_identifier ?? j.id}</span>
+          </h1>
+          <p class='mt-1 text-sm text-slate-500'>${dtStr} · Cliente: ${cName}</p>
+        `
+
+        // Status band
+        if (success) {
+          statusEl.className = 'mb-5 flex flex-wrap items-center justify-between gap-4 rounded-lg bg-emerald-50 p-5 ring-1 ring-emerald-200'
+          statusEl.innerHTML = `
+            <div class='flex items-center gap-4'>
+              <span class='inline-flex items-center rounded-md bg-emerald-600 px-3 py-1 text-xs font-bold uppercase tracking-widest text-white'>
+                Aprobado
+              </span>
+              <div>
+                <div class='text-xs font-semibold uppercase tracking-widest text-emerald-700'>
+                  Tolerancia ${toleranceLabel(tol)}
+                </div>
+                <div class='text-sm text-emerald-800'>Dentro del umbral — receta aprobada</div>
+              </div>
+            </div>
+            <div class='text-right'>
+              <div class='text-[10px] font-semibold uppercase tracking-widest text-emerald-700'>Delta E</div>
+              <div class='text-3xl font-bold tabular-nums text-emerald-900'>${dE.toFixed(2)}</div>
+            </div>
+          `
+        } else {
+          statusEl.className = 'mb-5 rounded-lg border border-amber-300 bg-amber-50 p-5'
+          const msg = j.calculated_recipe?.message ?? 'El color objetivo cae fuera del gamut alcanzable con el inventario.'
+          statusEl.innerHTML = `
+            <div class='flex flex-wrap items-start justify-between gap-4'>
+              <div class='flex items-start gap-3'>
+                <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' class='mt-0.5 h-5 w-5 flex-shrink-0 text-amber-600'>
+                  <path d='M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z'></path>
+                  <line x1='12' y1='9' x2='12' y2='13'></line>
+                  <line x1='12' y1='17' x2='12.01' y2='17'></line>
+                </svg>
+                <div>
+                  <div class='text-sm font-bold text-amber-900'>Fuera de gamut</div>
+                  <div class='mt-1 text-xs text-amber-800'>${msg} Umbral usado: ΔE ≤ ${tol?.toFixed(1) ?? '1.0'} (${toleranceLabel(tol)}).</div>
+                </div>
+              </div>
+              <div class='text-right'>
+                <div class='text-[10px] font-semibold uppercase tracking-widest text-amber-700'>Delta E</div>
+                <div class='text-3xl font-bold tabular-nums text-amber-900'>${dE.toFixed(2)}</div>
+              </div>
+            </div>
+          `
+        }
+
+        // Color chips: target + base (or target + closest if failure)
+        const secondLab = success
+          ? base
+          : (j.calculated_recipe?.closest_achievable_coordinates ?? j.calculated_recipe?.predicted_coordinates ?? base)
+        const secondLabel = success ? 'Color base' : 'Aproximación más cercana'
+        chipsEl.innerHTML = `
+          <div class='rounded-lg ring-1 ring-slate-200 overflow-hidden'>
+            <div class='h-32' style='background: ${labToRgbCss(target)}'></div>
+            <div class='flex items-center justify-between bg-white px-3 py-2'>
+              <span class='text-xs font-semibold uppercase tracking-widest text-slate-500'>Color objetivo</span>
+              <span class='text-[11px] tabular-nums text-slate-600'>L ${target[0].toFixed(1)} · a ${target[1].toFixed(1)} · b ${target[2].toFixed(1)}</span>
+            </div>
+          </div>
+          <div class='rounded-lg ring-1 ring-slate-200 overflow-hidden'>
+            <div class='h-32' style='background: ${labToRgbCss(secondLab)}'></div>
+            <div class='flex items-center justify-between bg-white px-3 py-2'>
+              <span class='text-xs font-semibold uppercase tracking-widest text-slate-500'>${secondLabel}</span>
+              <span class='text-[11px] tabular-nums text-slate-600'>L ${secondLab[0].toFixed(1)} · a ${secondLab[1].toFixed(1)} · b ${secondLab[2].toFixed(1)}</span>
+            </div>
+          </div>
+        `
+
+        // Body: recipe or gap info
+        if (success && j.calculated_recipe?.recipe) {
+          const recipe = j.calculated_recipe.recipe
+          const total = recipe.reduce((s, r) => s + r.percentage, 0)
+          const totalResin = 100 - total
+          const rowsHtml = recipe
+            .map((r, i) => {
+              const grams = (r.percentage / 100) * 100 * 1000
+              return `<tr class='${i % 2 === 0 ? 'bg-slate-50/50 ' : 'bg-white '}border-t border-slate-100'>
+                <td class='px-4 py-3 font-medium text-slate-800'>${r.sku}</td>
+                <td class='px-4 py-3 text-slate-600'>${r.product_name}</td>
+                <td class='px-4 py-3 text-slate-600'>${r.provider ?? '—'}</td>
+                <td class='px-4 py-3 text-right tabular-nums text-slate-600'>${r.percentage.toFixed(3)}</td>
+                <td class='px-4 py-3 text-right font-bold tabular-nums text-slate-900'>${grams.toFixed(1)}</td>
+              </tr>`
+            })
+            .join('')
+
+          bodyEl.innerHTML = `
+            <div class='rounded-lg border border-slate-200 bg-white'>
+              <div class='flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 p-4'>
+                <div class='text-sm font-semibold text-slate-800'>Receta (para lote de 100 kg)</div>
+                <div class='inline-flex items-center gap-2 rounded-md bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-600'>
+                  <span class='uppercase tracking-wide text-slate-400'>Resina base restante</span>
+                  <span class='font-semibold text-slate-800'>${totalResin.toFixed(3)} kg</span>
+                </div>
+              </div>
+              <div class='overflow-x-auto'>
+                <table class='w-full text-sm'>
+                  <thead>
+                    <tr class='text-left text-[10px] font-semibold uppercase tracking-widest text-slate-400'>
+                      <th class='px-4 py-3'>SKU</th>
+                      <th class='px-4 py-3'>Producto</th>
+                      <th class='px-4 py-3'>Proveedor</th>
+                      <th class='px-4 py-3 text-right'>% Carga</th>
+                      <th class='px-4 py-3 text-right'>Peso (g)</th>
+                    </tr>
+                  </thead>
+                  <tbody>${rowsHtml}</tbody>
+                </table>
+              </div>
+            </div>
+          `
+        } else {
+          // Failure view — surface the persisted suggestions in the same
+          // two-section shape used by the live matcher (Adquirir / Alternativos).
+          const rawSuggestions: Suggestion[] = j.calculated_recipe?.suggestions ?? []
+          const adquirir = rawSuggestions.filter((s) => !s.reachable_now)
+          const alternativos = rawSuggestions.filter((s) => s.reachable_now)
+
+          const renderAdquirir = (s: Suggestion): string => {
+            const sw = labToRgbCss(s.lab)
+            return `
+              <div class="flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50/50 p-3">
+                <div class="h-12 w-12 flex-shrink-0 rounded-md ring-1 ring-amber-300" style="background: ${sw}"></div>
+                <div class="min-w-0 flex-1">
+                  <div class="flex items-baseline gap-2">
+                    <span class="text-sm font-semibold text-slate-900">${s.name}</span>
+                    <span class="text-[10px] font-mono uppercase text-slate-400">${s.palette} · ${s.code}</span>
+                  </div>
+                  <div class="mt-0.5 text-[11px] text-slate-500">ΔE al objetivo ${s.delta_e_to_target.toFixed(2)}</div>
+                  <div class="mt-1 text-[11px] italic text-amber-800">Adquiere un pigmento capaz de producir este color.</div>
+                </div>
+              </div>
+            `
+          }
+
+          const renderAlternativo = (s: Suggestion): string => {
+            const sw = labToRgbCss(s.lab)
+            const recipe = s.recipe && s.recipe.length > 0
+              ? '<div class="mt-1 text-[11px] text-slate-600">Receta: ' +
+                s.recipe
+                  .map((r) => `<span class="tabular-nums">${r.percentage.toFixed(2)}% ${r.sku}</span>`)
+                  .join('<span class="text-slate-300"> · </span>') +
+                '</div>'
+              : ''
+            return `
+              <div class="flex items-start gap-3 rounded-lg border border-emerald-200 bg-emerald-50/40 p-3">
+                <div class="h-12 w-12 flex-shrink-0 rounded-md ring-1 ring-emerald-300" style="background: ${sw}"></div>
+                <div class="min-w-0 flex-1">
+                  <div class="flex items-baseline gap-2">
+                    <span class="text-sm font-semibold text-slate-900">${s.name}</span>
+                    <span class="text-[10px] font-mono uppercase text-slate-400">${s.palette} · ${s.code}</span>
+                  </div>
+                  <div class="mt-0.5 text-[11px] text-slate-500">ΔE al objetivo ${s.delta_e_to_target.toFixed(2)}</div>
+                  ${recipe}
+                </div>
+              </div>
+            `
+          }
+
+          const adquirirSection = adquirir.length > 0 ? `
+            <div class="mt-6">
+              <div class="mb-1 flex items-baseline gap-2">
+                <span class="inline-flex items-center rounded-md bg-amber-100 px-2 py-0.5 text-[10px] font-bold uppercase text-amber-700">Adquirir</span>
+                <div class="text-sm font-bold text-slate-800">Pigmentos que Necesitas para Alcanzar el Objetivo</div>
+              </div>
+              <p class="mb-3 text-xs text-slate-500">
+                Estos colores de referencia son los más cercanos al objetivo pero <b>no eran producibles con el inventario en el momento del trabajo</b>.
+              </p>
+              <div class="grid gap-2 sm:grid-cols-2">${adquirir.map(renderAdquirir).join('')}</div>
+            </div>
+          ` : ''
+
+          const alternativosSection = alternativos.length > 0 ? `
+            <div class="mt-6">
+              <div class="mb-1 flex items-baseline gap-2">
+                <span class="inline-flex items-center rounded-md bg-emerald-100 px-2 py-0.5 text-[10px] font-bold uppercase text-emerald-700">Disponible</span>
+                <div class="text-sm font-bold text-slate-800">Colores Alternativos que Sí Podías Producir</div>
+              </div>
+              <p class="mb-3 text-xs text-slate-500">
+                Si el cliente aceptó un cambio, estos colores de la biblioteca eran alcanzables con el inventario del momento.
+              </p>
+              <div class="grid gap-2 sm:grid-cols-2">${alternativos.map(renderAlternativo).join('')}</div>
+            </div>
+          ` : ''
+
+          const noSuggestionsSection = rawSuggestions.length === 0 ? `
+            <div class="mt-6 rounded-lg border border-slate-200 bg-slate-50 p-4 text-xs text-slate-500">
+              No se guardaron sugerencias para este trabajo. Los trabajos corridos antes de esta función no incluyen esta información.
+            </div>
+          ` : ''
+
+          bodyEl.innerHTML = `
+            <div class='rounded-lg border border-slate-200 bg-white p-5 text-sm text-slate-600'>
+              <div class='text-xs font-semibold uppercase tracking-widest text-slate-400'>Cómo cerrar la brecha</div>
+              <p class='mt-2'>
+                Agrega masterbatches en el
+                <a class='font-semibold text-blue-600 hover:underline' href='/dashboard/calibration-lab'>Laboratorio de Calibración</a>
+                para expandir el gamut alcanzable alrededor del color objetivo.
+              </p>
+            </div>
+            ${adquirirSection}
+            ${alternativosSection}
+            ${noSuggestionsSection}
+          `
+        }
+      })
+      .catch(() => {
+        window.location.href = `/dashboard/clients/${clientId}`
+      })
+  })
+</script>

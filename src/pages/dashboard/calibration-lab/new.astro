@@ -1,0 +1,135 @@
+---
+import DashboardLayout from '@/dashboard/layouts/DashboardLayout.astro'
+import MasterbatchIdentity from '@/dashboard/components/calibration-lab/MasterbatchIdentity.astro'
+import CalibrationData from '@/dashboard/components/calibration-lab/CalibrationData.astro'
+---
+
+<DashboardLayout
+  title='Nuevo Masterbatch'
+  active='calibration-lab'
+  breadcrumbLabels={{ new: 'Nuevo Masterbatch' }}
+>
+
+  <div class='mb-6'>
+    <h1 class='text-2xl font-bold text-slate-900'>Nuevo Masterbatch</h1>
+    <p class='mt-1 text-sm text-slate-500'>
+      Registra los datos de identidad y la curva CIELAB de 3 puntos.
+    </p>
+  </div>
+
+  <form id='calibration-form' class='grid gap-6 lg:grid-cols-2' novalidate>
+    <MasterbatchIdentity providers={[]} />
+    <CalibrationData />
+    <div class='lg:col-span-2'>
+      <div id='calibration-error' class='hidden rounded-lg border border-rose-300 bg-rose-50 p-3 text-sm text-rose-900'></div>
+      <div id='calibration-success' class='hidden rounded-lg border border-emerald-300 bg-emerald-50 p-3 text-sm text-emerald-900'></div>
+    </div>
+  </form>
+</DashboardLayout>
+
+<script>
+  document.addEventListener('astro:page-load', () => {
+    // URL guard — see comment on clients/[id].astro for why.
+    if (!/^\/dashboard\/calibration-lab\/new\/?$/.test(window.location.pathname)) return
+    // Populate the provider select after mount
+    const providerSelect = document.getElementById('brand-supplier') as HTMLSelectElement | null
+    if (providerSelect) {
+      fetch('/api/providers')
+        .then((r) => r.json())
+        .then((data) => {
+          const providers = data.providers ?? []
+          providers.forEach((p: { id: number; name: string }) => {
+            const opt = document.createElement('option')
+            opt.value = String(p.id)
+            opt.textContent = p.name
+            providerSelect.appendChild(opt)
+          })
+          if (providers.length > 0) providerSelect.value = String(providers[0].id)
+        })
+        .catch(() => {})
+    }
+
+    const form = document.getElementById('calibration-form') as HTMLFormElement | null
+    const errBox = document.getElementById('calibration-error') as HTMLDivElement | null
+    const okBox = document.getElementById('calibration-success') as HTMLDivElement | null
+
+    const num = (id: string) => Number((document.getElementById(id) as HTMLInputElement | null)?.value ?? NaN)
+    const str = (id: string) => (document.getElementById(id) as HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement | null)?.value ?? ''
+
+    const showErr = (msg: string) => {
+      if (!errBox) return
+      errBox.textContent = msg
+      errBox.classList.remove('hidden')
+      okBox?.classList.add('hidden')
+    }
+    const showOk = (msg: string) => {
+      if (!okBox) return
+      okBox.textContent = msg
+      okBox.classList.remove('hidden')
+      errBox?.classList.add('hidden')
+    }
+
+    const submit = async () => {
+      const providerIdRaw = str('brand-supplier')
+      const providerId = providerIdRaw ? Number(providerIdRaw) : null
+
+      const payload = {
+        provider_id: Number.isFinite(providerId) ? providerId : null,
+        product_name: str('product-name').trim(),
+        supplier_sku: str('supplier-sku').trim(),
+        color_index_num: str('color-index').trim() || null,
+        base_carrier_polymer: str('base-carrier'),
+        current_stock_kg: Number(str('stock-level')) || 0,
+        internal_notes: str('internal-notes').trim() || null,
+        calibration: [
+          { letdown_percentage: 0.5, lab_l: num('calib-05-l'), lab_a: num('calib-05-a'), lab_b: num('calib-05-b') },
+          { letdown_percentage: 1.0, lab_l: num('calib-10-l'), lab_a: num('calib-10-a'), lab_b: num('calib-10-b') },
+          { letdown_percentage: 2.0, lab_l: num('calib-20-l'), lab_a: num('calib-20-a'), lab_b: num('calib-20-b') }
+        ]
+      }
+
+      if (!payload.product_name || !payload.supplier_sku || !payload.base_carrier_polymer) {
+        showErr('El nombre del producto, SKU y polímero portador son obligatorios.')
+        return
+      }
+      for (const pt of payload.calibration) {
+        if ([pt.lab_l, pt.lab_a, pt.lab_b].some((n) => !Number.isFinite(n))) {
+          showErr(`Faltan L*/a*/b* en el punto de calibración de ${pt.letdown_percentage}%.`)
+          return
+        }
+      }
+
+      const resp = await fetch('/api/masterbatches', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(payload)
+      })
+
+      if (!resp.ok) {
+        const body = (await resp.json().catch(() => ({}))) as { error?: string }
+        showErr(
+          body?.error === 'supplier_sku_already_exists'
+            ? 'Ya existe un masterbatch con ese SKU.'
+            : body?.error ?? `Error del servidor (${resp.status})`
+        )
+        return
+      }
+      showOk('Masterbatch guardado. Volviendo al inventario…')
+      setTimeout(() => {
+        window.location.href = '/dashboard/calibration-lab'
+      }, 600)
+    }
+
+    form?.addEventListener('submit', (event) => {
+      event.preventDefault()
+      void submit()
+    })
+
+    document.querySelectorAll('[data-submit-masterbatch]').forEach((el) => {
+      el.addEventListener('click', (event) => {
+        event.preventDefault()
+        void submit()
+      })
+    })
+  })
+</script>

@@ -1,0 +1,79 @@
+---
+interface Props {
+  id: string
+  title: string
+  message: string
+  confirmLabel?: string
+  cancelLabel?: string
+  variant?: 'danger' | 'warning'
+}
+
+const {
+  id,
+  title,
+  message,
+  confirmLabel = 'Eliminar',
+  cancelLabel = 'Cancelar',
+  variant = 'danger'
+} = Astro.props
+
+const confirmClass = variant === 'danger'
+  ? 'bg-rose-600 hover:bg-rose-700 focus:ring-rose-500'
+  : 'bg-amber-600 hover:bg-amber-700 focus:ring-amber-500'
+---
+
+<dialog
+  id={id}
+  data-confirm
+  class='fixed inset-0 m-auto w-full max-w-sm rounded-2xl bg-white p-0 shadow-2xl backdrop:bg-slate-900/50 backdrop:backdrop-blur-sm'
+>
+  <div class='px-6 py-5'>
+    <div class='flex items-start gap-3'>
+      <div class={`mt-0.5 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full ${variant === 'danger' ? 'bg-rose-100' : 'bg-amber-100'}`}>
+        <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' class={`h-4 w-4 ${variant === 'danger' ? 'text-rose-600' : 'text-amber-600'}`}>
+          <path d='M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z'></path>
+          <line x1='12' y1='9' x2='12' y2='13'></line>
+          <line x1='12' y1='17' x2='12.01' y2='17'></line>
+        </svg>
+      </div>
+      <div>
+        <h2 class='text-base font-bold text-slate-900'>{title}</h2>
+        <p class='mt-1 text-sm text-slate-600'>{message}</p>
+      </div>
+    </div>
+  </div>
+  <footer class='flex items-center justify-end gap-2 border-t border-slate-100 px-6 py-4'>
+    <button
+      type='button'
+      data-confirm-cancel
+      class='rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50'
+    >
+      {cancelLabel}
+    </button>
+    <button
+      type='button'
+      data-confirm-ok
+      class={`rounded-lg px-4 py-2 text-sm font-semibold text-white focus:outline-none focus:ring-2 focus:ring-offset-2 ${confirmClass}`}
+    >
+      {confirmLabel}
+    </button>
+  </footer>
+</dialog>
+
+<script>
+  document.addEventListener('astro:page-load', () => {
+    document.querySelectorAll<HTMLDialogElement>('dialog[data-confirm]').forEach((dlg) => {
+      const cancelBtn = dlg.querySelector<HTMLElement>('[data-confirm-cancel]')
+      const okBtn = dlg.querySelector<HTMLElement>('[data-confirm-ok]')
+
+      const close = () => dlg.close()
+      cancelBtn?.addEventListener('click', close)
+      dlg.addEventListener('click', (e) => { if (e.target === dlg) close() })
+
+      okBtn?.addEventListener('click', () => {
+        dlg.dispatchEvent(new CustomEvent('confirm-ok'))
+        close()
+      })
+    })
+  })
+</script>

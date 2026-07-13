@@ -1,0 +1,40 @@
+---
+import NumberField from '@/dashboard/components/ui/NumberField.astro'
+
+interface Props {
+  title: string
+  idPrefix: string
+  tag?: string
+  tagVariant?: 'standard' | 'saturation'
+}
+
+const { title, idPrefix, tag, tagVariant = 'standard' } = Astro.props
+
+const tagStyles: Record<string, string> = {
+  standard: 'bg-blue-50 text-blue-700 ring-blue-100',
+  saturation: 'bg-violet-50 text-violet-700 ring-violet-100'
+}
+---
+
+<div class='rounded-lg border border-slate-200 bg-white p-5'>
+  <div class='mb-3 flex items-center justify-between'>
+    <h3 class='text-sm font-semibold text-slate-800'>{title}</h3>
+    {
+      tag && (
+        <span
+          class:list={[
+            'inline-flex items-center rounded-md px-2 py-0.5 text-[10px] font-semibold uppercase tracking-widest ring-1 ring-inset',
+            tagStyles[tagVariant]
+          ]}
+        >
+          {tag}
+        </span>
+      )
+    }
+  </div>
+  <div class='grid grid-cols-3 gap-3'>
+    <NumberField id={`${idPrefix}-l`} label='L*' placeholder='0.00' align='center' accent='l' />
+    <NumberField id={`${idPrefix}-a`} label='a*' placeholder='0.00' align='center' accent='a' />
+    <NumberField id={`${idPrefix}-b`} label='b*' placeholder='0.00' align='center' accent='b' />
+  </div>
+</div>

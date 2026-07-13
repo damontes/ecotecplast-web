@@ -1,0 +1,22 @@
+---
+interface Props {
+  class?: string
+  variant?: 'text' | 'rect' | 'circle'
+  width?: string
+  height?: string
+}
+
+const { class: className = '', variant = 'rect', width, height } = Astro.props
+
+const base = 'animate-pulse rounded-md bg-slate-200'
+const variants: Record<string, string> = {
+  text: 'h-4 rounded',
+  rect: 'rounded-md',
+  circle: 'rounded-full'
+}
+---
+
+<div
+  class:list={[base, variants[variant], className]}
+  style={[width ? `width:${width}` : '', height ? `height:${height}` : ''].filter(Boolean).join('; ') || undefined}
+/>

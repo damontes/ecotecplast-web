@@ -1,0 +1,144 @@
+---
+import SideRail from '@/dashboard/components/SideRail.astro'
+import Breadcrumbs, { type BreadcrumbItem } from '@/dashboard/components/ui/Breadcrumbs.astro'
+import { ClientRouter } from 'astro:transitions'
+import '@fontsource-variable/montserrat'
+import '@/styles/global.css'
+
+interface Props {
+  title: string
+  active: 'color-matcher' | 'calibration-lab' | 'clients' | 'references'
+  // Override auto-derived labels for URL segments. Key by the raw segment
+  // (e.g. '1' → 'Automotive Plastics Corp', 'new' → 'New Masterbatch').
+  // Only needed for dynamic route params or when the kebab-case default
+  // doesn't read well.
+  breadcrumbLabels?: Record<string, string>
+  // Skip specific URL segments from the breadcrumb trail entirely.
+  // Use for "structural" URL parts that don't correspond to a browsable
+  // page (e.g. `/clients/1/jobs/45` — `jobs` is just a namespace, not a
+  // page, so it shouldn't be a clickable breadcrumb link).
+  breadcrumbSkipSegments?: string[]
+}
+
+const { title, active, breadcrumbLabels, breadcrumbSkipSegments } = Astro.props
+
+// Derive breadcrumb trail from the current URL. Everything under /dashboard.
+// A single-item trail (e.g. /dashboard/clients) is suppressed — the sidebar
+// already indicates the section.
+const segments = Astro.url.pathname.split('/').filter(Boolean)
+const trail = segments[0] === 'dashboard' ? segments.slice(1) : []
+
+// Default Spanish labels for known route segments. URLs stay in English
+// (so old bookmarks work + shorter paths) but the visible breadcrumb
+// reads in the app's language. Page-level overrides via `breadcrumbLabels`
+// still win (used to resolve dynamic IDs to human names).
+const DEFAULT_SEGMENT_LABELS: Record<string, string> = {
+  clients: 'Clientes',
+  jobs: 'Trabajos',
+  'calibration-lab': 'Laboratorio de Calibración',
+  'color-matcher': 'Igualador de Color',
+  references: 'Colores de Referencia',
+  new: 'Nuevo'
+}
+
+const titleCase = (s: string) =>
+  s
+    .split('-')
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(' ')
+
+const skipSet = new Set(breadcrumbSkipSegments ?? [])
+const breadcrumbItems: BreadcrumbItem[] = trail
+  .map((seg, i): BreadcrumbItem | null => {
+    if (skipSet.has(seg)) return null
+    const label =
+      breadcrumbLabels?.[seg] ?? DEFAULT_SEGMENT_LABELS[seg] ?? titleCase(seg)
+    const isLast = i === trail.length - 1
+    const href = isLast ? undefined : '/' + segments.slice(0, i + 2).join('/')
+    return { label, href, segment: seg }
+  })
+  .filter((item): item is BreadcrumbItem => item !== null)
+
+const showBreadcrumbs = breadcrumbItems.length >= 2
+---
+
+<!doctype html>
+<html lang='en' class='h-full'>
+  <head>
+    <meta charset='UTF-8' />
+    <meta name='viewport' content='width=device-width, initial-scale=1.0' />
+    <link rel='icon' type='image/x-icon' href='/favicon.ico' />
+    <title>{title} · Ecotecplast ColorHub</title>
+    <meta name='robots' content='noindex, nofollow' />
+    <ClientRouter />
+  </head>
+  <body class='h-full overflow-hidden bg-slate-100 text-slate-800 antialiased'>
+    {/* Loading bar — visible only during ClientRouter navigation */}
+    <div id='nav-loader' class='pointer-events-none fixed inset-x-0 top-0 z-50 h-0.5'>
+      <div
+        id='nav-loader-bar'
+        class='h-full w-0 bg-blue-600 transition-all duration-200 ease-out'
+      />
+    </div>
+
+    <div class='flex h-full'>
+      <SideRail active={active} transition:persist='sidebar' />
+      <main class='flex-1 overflow-y-auto overflow-x-hidden'>
+        <div class='mx-auto max-w-6xl px-6 py-8 lg:px-10 lg:py-10'>
+          {showBreadcrumbs && <Breadcrumbs items={breadcrumbItems} />}
+          <slot />
+        </div>
+      </main>
+    </div>
+
+    <script>
+      const bar = document.getElementById('nav-loader-bar')
+      let timer: ReturnType<typeof setTimeout> | null = null
+
+      const start = () => {
+        if (!bar) return
+        bar.style.transition = 'none'
+        bar.style.width = '0%'
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            bar.style.transition = 'width 0.4s ease-out'
+            bar.style.width = '70%'
+          })
+        })
+      }
+
+      const done = () => {
+        if (!bar) return
+        if (timer) clearTimeout(timer)
+        bar.style.transition = 'width 0.2s ease-in, opacity 0.3s ease 0.1s'
+        bar.style.width = '100%'
+        bar.style.opacity = '0'
+        timer = setTimeout(() => {
+          bar.style.transition = 'none'
+          bar.style.width = '0%'
+          bar.style.opacity = '1'
+        }, 400)
+      }
+
+      document.addEventListener('astro:page-load', done)
+      document.addEventListener('astro:after-swap', done)
+      document.addEventListener('astro:before-swap', start)
+    </script>
+    <style is:global>
+      html {
+        font-family: 'Montserrat Variable', system-ui, sans-serif;
+        background: #f1f5f9;
+      }
+      /* Uniform focus ring for form controls inside the dashboard */
+      .ch-input {
+        @apply block w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500;
+      }
+      .ch-input-lg {
+        @apply block w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-lg font-semibold text-slate-800 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500;
+      }
+      .ch-label {
+        @apply mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500;
+      }
+    </style>
+  </body>
+</html>

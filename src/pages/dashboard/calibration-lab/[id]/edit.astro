@@ -1,0 +1,323 @@
+---
+import DashboardLayout from '@/dashboard/layouts/DashboardLayout.astro'
+import Card from '@/dashboard/components/ui/Card.astro'
+import ConfirmDialog from '@/dashboard/components/ui/ConfirmDialog.astro'
+---
+
+<DashboardLayout
+  title='Editar Masterbatch'
+  active='calibration-lab'
+  breadcrumbLabels={{ edit: 'Editar' }}
+>
+  <div class='mb-6'>
+    <div class='h-7 w-48 animate-pulse rounded bg-slate-200' id='edit-title-skeleton' />
+    <p class='mt-1 text-sm text-slate-500' id='edit-subtitle' />
+  </div>
+
+  <form id='edit-mb-form' class='grid gap-6 lg:grid-cols-2' novalidate>
+    {/* Identity */}
+    <Card title='Identidad del Masterbatch' eyebrow='Edición'>
+      <div class='space-y-4'>
+        <div>
+          <label for='edit-product-name' class='ch-label'>Nombre del producto *</label>
+          <input id='edit-product-name' type='text' required class='ch-input' />
+        </div>
+        <div class='grid grid-cols-2 gap-4'>
+          <div>
+            <label for='edit-provider' class='ch-label'>Proveedor</label>
+            <select id='edit-provider' class='ch-input'>
+              <option value=''>Sin proveedor</option>
+            </select>
+          </div>
+          <div>
+            <label for='edit-sku' class='ch-label'>SKU del proveedor *</label>
+            <input id='edit-sku' type='text' required class='ch-input' />
+          </div>
+        </div>
+        <div class='grid grid-cols-2 gap-4'>
+          <div>
+            <label for='edit-color-index' class='ch-label'>Índice de color</label>
+            <input id='edit-color-index' type='text' class='ch-input' />
+          </div>
+          <div>
+            <label for='edit-polymer' class='ch-label'>Polímero portador *</label>
+            <select id='edit-polymer' class='ch-input'>
+              <option value='pe'>PE (LDPE/LLDPE)</option>
+              <option value='hdpe'>HDPE</option>
+              <option value='pp'>PP (Polipropileno)</option>
+              <option value='pet'>PET</option>
+              <option value='abs'>ABS</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label for='edit-stock' class='ch-label'>Stock actual (kg)</label>
+          <input id='edit-stock' type='number' step='0.1' min='0' class='ch-input' />
+        </div>
+        <div>
+          <label for='edit-notes' class='ch-label'>Notas internas</label>
+          <textarea id='edit-notes' rows='4' class='ch-input' />
+        </div>
+      </div>
+    </Card>
+
+    {/* Calibration */}
+    <Card title='Curva de Calibración de Color' eyebrow='Edición' right='UNIDAD: CIELAB (D65/10°)'>
+      <div class='space-y-4'>
+        {[0.5, 1.0, 2.0].map((pct) => {
+          const prefix = pct === 0.5 ? 'calib-05' : pct === 1.0 ? 'calib-10' : 'calib-20'
+          const tag = pct === 0.5 ? 'Carga Estándar' : pct === 2.0 ? 'Carga de Saturación' : null
+          const tagClass = pct === 0.5
+            ? 'bg-blue-50 text-blue-700 ring-blue-100'
+            : 'bg-violet-50 text-violet-700 ring-violet-100'
+          return (
+            <div class='rounded-lg border border-slate-200 bg-white p-5'>
+              <div class='mb-3 flex items-center justify-between'>
+                <h3 class='text-sm font-semibold text-slate-800'>{pct}%</h3>
+                {tag && (
+                  <span
+                    class:list={[
+                      'inline-flex items-center rounded-md px-2 py-0.5 text-[10px] font-semibold uppercase tracking-widest ring-1 ring-inset',
+                      tagClass
+                    ]}
+                  >
+                    {tag}
+                  </span>
+                )}
+              </div>
+              <div class='grid grid-cols-3 gap-3'>
+                <div>
+                  <label for={`${prefix}-l`} class='ch-label'>L*</label>
+                  <input id={`${prefix}-l`} type='number' step='0.01' required class='ch-input text-center' />
+                </div>
+                <div>
+                  <label for={`${prefix}-a`} class='ch-label'>a*</label>
+                  <input id={`${prefix}-a`} type='number' step='0.01' required class='ch-input text-center' />
+                </div>
+                <div>
+                  <label for={`${prefix}-b`} class='ch-label'>b*</label>
+                  <input id={`${prefix}-b`} type='number' step='0.01' required class='ch-input text-center' />
+                </div>
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    </Card>
+
+    <div class='lg:col-span-2'>
+      <div id='edit-error' class='hidden rounded-lg border border-rose-300 bg-rose-50 p-3 text-sm text-rose-900'></div>
+      <div id='edit-success' class='hidden rounded-lg border border-emerald-300 bg-emerald-50 p-3 text-sm text-emerald-900'></div>
+    </div>
+  </form>
+
+  <div class='mt-6 flex flex-wrap items-center justify-between gap-3'>
+    <button
+      type='button'
+      id='delete-mb-btn'
+      class='inline-flex items-center gap-1.5 rounded-lg border border-rose-200 bg-white px-3.5 py-2 text-sm font-semibold text-rose-700 shadow-sm hover:bg-rose-50'
+    >
+      <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' class='h-4 w-4'>
+        <path d='M3 6h18'></path>
+        <path d='M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6'></path>
+        <path d='M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2'></path>
+      </svg>
+      Eliminar
+    </button>
+    <div class='flex items-center gap-3'>
+      <a href='' id='cancel-link'
+         class='rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50'>
+        Cancelar
+      </a>
+      <button type='submit' id='save-btn' form='edit-mb-form'
+         class='rounded-lg bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-60'>
+        Guardar cambios
+      </button>
+    </div>
+  </div>
+
+  <ConfirmDialog
+    id='delete-mb-dialog'
+    title='Eliminar masterbatch'
+    message='Esta acción no se puede deshacer. Se eliminarán también los datos de calibración asociados.'
+    confirmLabel='Eliminar'
+  />
+</DashboardLayout>
+
+<script>
+  document.addEventListener('astro:page-load', () => {
+    // URL guard — see comment on clients/[id].astro for why.
+    if (!/^\/dashboard\/calibration-lab\/\d+\/edit\/?$/.test(window.location.pathname)) return
+    const parts = window.location.pathname.replace(/\/$/, '').split('/')
+    const mbId = Number(parts[parts.length - 2])
+    if (!Number.isFinite(mbId)) return
+
+    document.getElementById('cancel-link')?.setAttribute('href', `/dashboard/calibration-lab/${mbId}`)
+
+    // Delete flow — open confirm dialog on button click, DELETE on confirm.
+    const deleteDlg = document.getElementById('delete-mb-dialog') as HTMLDialogElement | null
+    document.getElementById('delete-mb-btn')?.addEventListener('click', () => {
+      deleteDlg?.showModal()
+    })
+    deleteDlg?.addEventListener('confirm-ok', async () => {
+      const resp = await fetch(`/api/masterbatches/${mbId}`, { method: 'DELETE' })
+      if (resp.ok) window.location.href = '/dashboard/calibration-lab'
+    })
+
+    const errBox = document.getElementById('edit-error')
+    const okBox = document.getElementById('edit-success')
+    const titleSkeleton = document.getElementById('edit-title-skeleton')
+    const saveBtn = document.getElementById('save-btn') as HTMLButtonElement | null
+
+    const showErr = (msg: string) => {
+      if (!errBox) return
+      errBox.textContent = msg
+      errBox.classList.remove('hidden')
+      okBox?.classList.add('hidden')
+    }
+
+    const val = (id: string) => (document.getElementById(id) as HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement | null)?.value ?? ''
+    const num = (id: string) => Number(val(id))
+
+    // Load providers
+    fetch('/api/providers')
+      .then((r) => r.json())
+      .then((data) => {
+        const sel = document.getElementById('edit-provider') as HTMLSelectElement | null
+        if (!sel) return
+        ;(data.providers ?? []).forEach((p: { id: number; name: string }) => {
+          const opt = document.createElement('option')
+          opt.value = String(p.id)
+          opt.textContent = p.name
+          sel.appendChild(opt)
+        })
+      })
+      .catch(() => {})
+
+    // Load existing data
+    fetch(`/api/masterbatches/${mbId}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.error || !data.masterbatch) {
+          window.location.href = '/dashboard/calibration-lab'
+          return
+        }
+        const mb = data.masterbatch
+        const providerName = Array.isArray(mb.providers)
+          ? mb.providers[0]?.name ?? ''
+          : (mb.providers as { name?: string } | null)?.name ?? ''
+
+        document.title = `Editar ${mb.product_name} · ColorHub`
+        if (titleSkeleton) {
+          titleSkeleton.outerHTML = `<h1 class='text-2xl font-bold text-slate-900'>Editar ${mb.product_name}</h1>`
+        }
+
+        // Fill identity fields
+        const setVal = (id: string, v: string) => {
+          const el = document.getElementById(id) as HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement | null
+          if (el) el.value = v
+        }
+        setVal('edit-product-name', mb.product_name ?? '')
+        setVal('edit-sku', mb.supplier_sku ?? '')
+        setVal('edit-color-index', mb.color_index_num ?? '')
+        setVal('edit-polymer', mb.base_carrier_polymer ?? 'pe')
+        setVal('edit-stock', String(mb.current_stock_kg ?? 0))
+        setVal('edit-notes', mb.internal_notes ?? '')
+
+        // Set provider after options are loaded
+        setTimeout(() => {
+          if (mb.provider_id) setVal('edit-provider', String(mb.provider_id))
+        }, 200)
+
+        // Fill calibration data
+        const calData = (mb.calibration_data ?? []) as Array<{
+          letdown_percentage: number
+          lab_l: number
+          lab_a: number
+          lab_b: number
+        }>
+        for (const pt of calData) {
+          const prefix = pt.letdown_percentage === 0.5 ? 'calib-05'
+            : pt.letdown_percentage === 1.0 ? 'calib-10'
+            : 'calib-20'
+          setVal(`${prefix}-l`, String(pt.lab_l))
+          setVal(`${prefix}-a`, String(pt.lab_a))
+          setVal(`${prefix}-b`, String(pt.lab_b))
+        }
+      })
+      .catch(() => {
+        window.location.href = '/dashboard/calibration-lab'
+      })
+
+    // Submit
+    const form = document.getElementById('edit-mb-form') as HTMLFormElement | null
+    form?.addEventListener('submit', async (e) => {
+      e.preventDefault()
+      errBox?.classList.add('hidden')
+      okBox?.classList.add('hidden')
+
+      const providerIdRaw = val('edit-provider')
+      const providerId = providerIdRaw ? Number(providerIdRaw) : null
+
+      const payload = {
+        provider_id: Number.isFinite(providerId) ? providerId : null,
+        product_name: val('edit-product-name').trim(),
+        supplier_sku: val('edit-sku').trim(),
+        color_index_num: val('edit-color-index').trim() || null,
+        base_carrier_polymer: val('edit-polymer'),
+        current_stock_kg: Number(val('edit-stock')) || 0,
+        internal_notes: val('edit-notes').trim() || null,
+        calibration: [
+          { letdown_percentage: 0.5, lab_l: num('calib-05-l'), lab_a: num('calib-05-a'), lab_b: num('calib-05-b') },
+          { letdown_percentage: 1.0, lab_l: num('calib-10-l'), lab_a: num('calib-10-a'), lab_b: num('calib-10-b') },
+          { letdown_percentage: 2.0, lab_l: num('calib-20-l'), lab_a: num('calib-20-a'), lab_b: num('calib-20-b') }
+        ]
+      }
+
+      if (!payload.product_name || !payload.supplier_sku || !payload.base_carrier_polymer) {
+        showErr('El nombre del producto, SKU y polímero portador son obligatorios.')
+        return
+      }
+      for (const pt of payload.calibration) {
+        if ([pt.lab_l, pt.lab_a, pt.lab_b].some((n) => !Number.isFinite(n))) {
+          showErr(`Faltan L*/a*/b* en el punto de calibración de ${pt.letdown_percentage}%.`)
+          return
+        }
+      }
+
+      if (saveBtn) {
+        saveBtn.disabled = true
+        saveBtn.textContent = 'Guardando…'
+      }
+
+      const resp = await fetch(`/api/masterbatches/${mbId}`, {
+        method: 'PUT',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(payload)
+      })
+
+      if (!resp.ok) {
+        const body = (await resp.json().catch(() => ({}))) as { error?: string }
+        showErr(
+          body?.error === 'supplier_sku_already_exists'
+            ? 'Ya existe otro masterbatch con ese SKU.'
+            : body?.error ?? `Error del servidor (${resp.status})`
+        )
+        if (saveBtn) {
+          saveBtn.disabled = false
+          saveBtn.textContent = 'Guardar cambios'
+        }
+        return
+      }
+
+      if (okBox) {
+        okBox.textContent = 'Cambios guardados. Volviendo al detalle…'
+        okBox.classList.remove('hidden')
+        errBox?.classList.add('hidden')
+      }
+      setTimeout(() => {
+        window.location.href = `/dashboard/calibration-lab/${mbId}`
+      }, 600)
+    })
+  })
+</script>

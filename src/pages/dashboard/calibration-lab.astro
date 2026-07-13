@@ -1,0 +1,353 @@
+---
+import DashboardLayout from '@/dashboard/layouts/DashboardLayout.astro'
+import Card from '@/dashboard/components/ui/Card.astro'
+---
+
+<DashboardLayout title='Laboratorio de Calibración' active='calibration-lab'>
+  <div class='mb-6 flex items-start justify-between gap-4'>
+    <div>
+      <div class='text-[10px] font-semibold uppercase tracking-widest text-slate-400'>
+        Ecotecplast ColorHub
+      </div>
+      <h1 class='text-2xl font-bold text-slate-900'>Laboratorio de Calibración</h1>
+      <p class='mt-1 text-sm text-slate-500'>
+        Masterbatches registrados con su curva de calibración CIELAB de 3 puntos.
+      </p>
+    </div>
+    <div class='flex flex-shrink-0 items-center gap-2'>
+      <button
+        id='open-new-provider'
+        type='button'
+        class='inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-2'
+      >
+        <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' class='h-4 w-4'>
+          <line x1='12' y1='5' x2='12' y2='19'></line>
+          <line x1='5' y1='12' x2='19' y2='12'></line>
+        </svg>
+        Nuevo proveedor
+      </button>
+      <a
+        href='/dashboard/calibration-lab/new'
+        class='inline-flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-700 focus:ring-offset-2'
+      >
+        <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' class='h-4 w-4'>
+          <line x1='12' y1='5' x2='12' y2='19'></line>
+          <line x1='5' y1='12' x2='19' y2='12'></line>
+        </svg>
+        Nuevo masterbatch
+      </a>
+    </div>
+  </div>
+
+  <Card title='Inventario' eyebrow='Cargando…'>
+    <div class='mb-4 grid gap-3 sm:grid-cols-3'>
+      <div>
+        <label for='filter-provider' class='ch-label'>Proveedor</label>
+        <select id='filter-provider' class='ch-input'>
+          <option value=''>Todos los proveedores</option>
+        </select>
+      </div>
+      <div>
+        <label for='filter-polymer' class='ch-label'>Polímero</label>
+        <select id='filter-polymer' class='ch-input'>
+          <option value=''>Todos los polímeros</option>
+          <option value='pe'>PE</option>
+          <option value='hdpe'>HDPE</option>
+          <option value='pp'>PP</option>
+          <option value='pet'>PET</option>
+          <option value='abs'>ABS</option>
+          <option value='ps'>PS</option>
+        </select>
+      </div>
+      <div>
+        <label for='filter-search' class='ch-label'>Buscar</label>
+        <input id='filter-search' type='search' placeholder='Nombre del producto o SKU…' class='ch-input' />
+      </div>
+    </div>
+
+    <div class='overflow-x-auto'>
+      <table class='w-full text-sm'>
+        <thead>
+          <tr class='text-left text-[10px] font-semibold uppercase tracking-widest text-slate-400'>
+            <th class='px-3 py-3'>Producto</th>
+            <th class='px-3 py-3'>SKU</th>
+            <th class='px-3 py-3'>Proveedor</th>
+            <th class='px-3 py-3'>Polímero</th>
+            <th class='px-3 py-3'>Índice de color</th>
+            <th class='px-3 py-3 text-right'>Stock (kg)</th>
+            <th class='px-3 py-3 text-right'>Calibración</th>
+          </tr>
+        </thead>
+        <tbody id='mb-tbody'>
+          {Array.from({ length: 5 }).map(() => (
+            <tr class='border-t border-slate-100 [&_td]:px-3 [&_td]:py-2.5'>
+              <td><div class='h-4 w-32 animate-pulse rounded bg-slate-200' /></td>
+              <td><div class='h-3.5 w-24 animate-pulse rounded bg-slate-200' /></td>
+              <td><div class='h-3.5 w-20 animate-pulse rounded bg-slate-200' /></td>
+              <td><div class='h-3.5 w-10 animate-pulse rounded bg-slate-200' /></td>
+              <td><div class='h-3.5 w-16 animate-pulse rounded bg-slate-200' /></td>
+              <td><div class='ml-auto h-3.5 w-12 animate-pulse rounded bg-slate-200' /></td>
+              <td><div class='ml-auto h-5 w-12 animate-pulse rounded-md bg-slate-200' /></td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <div id='no-results' class='hidden px-3 py-6 text-center text-xs text-slate-400'>
+        Ningún masterbatch coincide con los filtros.
+      </div>
+      <div id='empty-state' class='hidden px-3 py-6 text-center text-xs text-slate-400'>
+        Aún no hay masterbatches. Haz clic en <b>Nuevo masterbatch</b> para agregar el primero.
+      </div>
+    </div>
+  </Card>
+
+  {/* New Provider modal */}
+  <dialog
+    id='new-provider-modal'
+    class='fixed inset-0 m-auto w-full max-w-sm rounded-2xl bg-white p-0 shadow-2xl backdrop:bg-slate-900/50 backdrop:backdrop-blur-sm'
+  >
+    <form id='new-provider-form' class='divide-y divide-slate-100'>
+      <header class='flex items-center justify-between px-6 py-4'>
+        <div>
+          <h2 class='text-base font-bold text-slate-900'>Nuevo proveedor</h2>
+          <p class='mt-0.5 text-xs text-slate-500'>Agrega un proveedor al catálogo.</p>
+        </div>
+        <button
+          type='button'
+          id='close-new-provider'
+          class='rounded-md p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600'
+          aria-label='Cerrar'
+        >
+          <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' class='h-5 w-5'>
+            <line x1='18' y1='6' x2='6' y2='18'></line>
+            <line x1='6' y1='6' x2='18' y2='18'></line>
+          </svg>
+        </button>
+      </header>
+      <div class='space-y-3 px-6 py-5'>
+        <div>
+          <label for='new-provider-name' class='ch-label'>Nombre *</label>
+          <input
+            id='new-provider-name'
+            name='name'
+            type='text'
+            required
+            class='ch-input'
+            placeholder='ej. Clariant'
+          />
+        </div>
+        <div id='new-provider-error' class='hidden rounded-lg border border-rose-300 bg-rose-50 p-2.5 text-xs text-rose-900'></div>
+      </div>
+      <footer class='flex items-center justify-end gap-2 px-6 py-4'>
+        <button
+          type='button'
+          id='cancel-new-provider'
+          class='rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50'
+        >
+          Cancelar
+        </button>
+        <button
+          type='submit'
+          id='submit-new-provider'
+          class='rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-60'
+        >
+          Agregar proveedor
+        </button>
+      </footer>
+    </form>
+  </dialog>
+</DashboardLayout>
+
+<script>
+  document.addEventListener('astro:page-load', () => {
+    const tbody = document.getElementById('mb-tbody') as HTMLTableSectionElement | null
+    if (!tbody) return
+    const fProvider = document.getElementById('filter-provider') as HTMLSelectElement | null
+    const fPolymer = document.getElementById('filter-polymer') as HTMLSelectElement | null
+    const fSearch = document.getElementById('filter-search') as HTMLInputElement | null
+    const noResults = document.getElementById('no-results')
+    const emptyState = document.getElementById('empty-state')
+
+    let allRows: HTMLTableRowElement[] = []
+
+    const applyFilters = () => {
+      const providerId = fProvider?.value ?? ''
+      const polymer = fPolymer?.value ?? ''
+      const term = (fSearch?.value ?? '').trim().toLowerCase()
+
+      let visible = 0
+      allRows.forEach((row) => {
+        const rowProvider = row.dataset.providerId ?? ''
+        const rowPolymer = row.dataset.polymer ?? ''
+        const rowHay = row.dataset.search ?? ''
+
+        const show = (providerId === '' || rowProvider === providerId) &&
+                     (polymer === '' || rowPolymer === polymer) &&
+                     (term === '' || rowHay.includes(term))
+        row.hidden = !show
+        if (show) visible++
+      })
+      if (noResults) noResults.classList.toggle('hidden', visible > 0 || allRows.length === 0)
+    }
+
+    fProvider?.addEventListener('change', applyFilters)
+    fPolymer?.addEventListener('change', applyFilters)
+    fSearch?.addEventListener('input', applyFilters)
+
+    const renderRows = (data: Array<{
+      id: number
+      product_name: string
+      supplier_sku: string
+      color_index_num: string | null
+      base_carrier_polymer: string
+      current_stock_kg: number
+      provider_id: number | null
+      providers: { name: string } | { name: string }[] | null
+      calibration_data: unknown[]
+    }>) => {
+      tbody.innerHTML = ''
+      allRows = []
+
+      if (data.length === 0) {
+        emptyState?.classList.remove('hidden')
+        return
+      }
+
+      data.forEach((mb) => {
+        const providerName = Array.isArray(mb.providers)
+          ? mb.providers[0]?.name ?? '—'
+          : (mb.providers as { name?: string } | null)?.name ?? '—'
+        const calPoints = (mb.calibration_data ?? []).length
+
+        const tr = document.createElement('tr')
+        tr.className = 'border-t border-slate-100 hover:bg-slate-50 [&_td]:px-3 [&_td]:py-2.5 cursor-pointer'
+        tr.dataset.mbRow = ''
+        tr.dataset.providerId = String(mb.provider_id ?? '')
+        tr.dataset.polymer = mb.base_carrier_polymer
+        tr.dataset.search = `${mb.product_name} ${mb.supplier_sku}`.toLowerCase()
+
+        const badge = calPoints === 3
+          ? '<span class="inline-flex items-center rounded-md bg-emerald-100 px-2 py-0.5 text-[10px] font-bold uppercase text-emerald-700">3 / 3</span>'
+          : `<span class="inline-flex items-center rounded-md bg-amber-100 px-2 py-0.5 text-[10px] font-bold uppercase text-amber-700">${calPoints} / 3</span>`
+
+        const detailUrl = `/dashboard/calibration-lab/${mb.id}`
+        tr.innerHTML = `
+          <td class="font-medium text-slate-800">
+            <a href="${detailUrl}" class="hover:text-blue-600 hover:underline">${mb.product_name}</a>
+          </td>
+          <td class="font-mono text-xs text-slate-600">${mb.supplier_sku}</td>
+          <td class="text-xs text-slate-700">${providerName}</td>
+          <td class="text-xs uppercase text-slate-600">${mb.base_carrier_polymer}</td>
+          <td class="text-xs text-slate-600">${mb.color_index_num ?? '—'}</td>
+          <td class="text-right text-xs tabular-nums text-slate-700">${Number(mb.current_stock_kg ?? 0).toFixed(1)}</td>
+          <td class="text-right">${badge}</td>
+        `
+        tr.addEventListener('click', (e) => {
+          if ((e.target as HTMLElement).closest('a')) return
+          window.location.href = detailUrl
+        })
+        tbody.appendChild(tr)
+        allRows.push(tr)
+      })
+
+      applyFilters()
+    }
+
+    const populateProviderFilter = (providers: Array<{ id: number; name: string }>) => {
+      if (!fProvider) return
+      const prev = fProvider.value
+      fProvider.innerHTML = '<option value="">Todos los proveedores</option>'
+      providers.forEach((p) => {
+        const opt = document.createElement('option')
+        opt.value = String(p.id)
+        opt.textContent = p.name
+        fProvider.appendChild(opt)
+      })
+      fProvider.value = prev
+    }
+
+    const loadAll = () => {
+      Promise.all([
+        fetch('/api/providers').then((r) => r.json()),
+        fetch('/api/masterbatches').then((r) => r.json())
+      ]).then(([providersRes, mbRes]) => {
+        populateProviderFilter(providersRes.providers ?? [])
+        renderRows(mbRes.masterbatches ?? [])
+
+        const eyebrow = document.querySelector('[data-card-eyebrow]') as HTMLElement | null
+        if (eyebrow) eyebrow.textContent = `${(mbRes.masterbatches ?? []).length} total`
+      }).catch(() => {
+        tbody.innerHTML = '<tr><td colspan="7" class="px-3 py-6 text-center text-xs text-rose-600">Fallo al cargar el inventario.</td></tr>'
+      })
+    }
+
+    loadAll()
+
+    // --- New Provider modal ---
+    const providerModal = document.getElementById('new-provider-modal') as HTMLDialogElement | null
+    const openProv = document.getElementById('open-new-provider')
+    const closeProv = document.getElementById('close-new-provider')
+    const cancelProv = document.getElementById('cancel-new-provider')
+    const provForm = document.getElementById('new-provider-form') as HTMLFormElement | null
+    const provErr = document.getElementById('new-provider-error') as HTMLDivElement | null
+    const provSubmit = document.getElementById('submit-new-provider') as HTMLButtonElement | null
+
+    const closeProvModal = () => {
+      providerModal?.close()
+      provForm?.reset()
+      provErr?.classList.add('hidden')
+    }
+    openProv?.addEventListener('click', () => providerModal?.showModal())
+    closeProv?.addEventListener('click', closeProvModal)
+    cancelProv?.addEventListener('click', closeProvModal)
+    providerModal?.addEventListener('click', (event) => {
+      if (event.target === providerModal) closeProvModal()
+    })
+
+    provForm?.addEventListener('submit', async (event) => {
+      event.preventDefault()
+      if (!provForm || !provSubmit) return
+      provErr?.classList.add('hidden')
+
+      const name = (document.getElementById('new-provider-name') as HTMLInputElement).value.trim()
+      if (!name) {
+        if (provErr) {
+          provErr.textContent = 'El nombre es obligatorio.'
+          provErr.classList.remove('hidden')
+        }
+        return
+      }
+
+      provSubmit.disabled = true
+      provSubmit.textContent = 'Agregando…'
+
+      const resp = await fetch('/api/providers', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ name })
+      })
+      if (!resp.ok) {
+        const body = (await resp.json().catch(() => ({}))) as { error?: string }
+        if (provErr) {
+          provErr.textContent =
+            body?.error === 'provider_name_exists'
+              ? 'Ya existe un proveedor con ese nombre.'
+              : body?.error ?? `Error del servidor (${resp.status})`
+          provErr.classList.remove('hidden')
+        }
+        provSubmit.disabled = false
+        provSubmit.textContent = 'Agregar proveedor'
+        return
+      }
+
+      // Refresh provider dropdown + reset UI.
+      const { providers } = (await fetch('/api/providers').then((r) => r.json())) as {
+        providers: Array<{ id: number; name: string }>
+      }
+      populateProviderFilter(providers)
+      closeProvModal()
+      provSubmit.disabled = false
+      provSubmit.textContent = 'Agregar proveedor'
+    })
+  })
+</script>

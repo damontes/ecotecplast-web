@@ -1,0 +1,67 @@
+---
+// Dashboard breadcrumb trail. Pass the full trail including the current
+// page; the last item is rendered non-clickable (drop `href` on it, or
+// leave it — it'll be styled as current either way).
+//
+// The optional `segment` field carries the raw URL segment for the item;
+// it's emitted as `data-breadcrumb-segment` so pages can target a specific
+// breadcrumb entry from client-side JS after data loads. Used to swap raw
+// IDs (e.g. `/clients/1` → segment `1`) for human labels (client name).
+export interface BreadcrumbItem {
+  label: string
+  href?: string
+  segment?: string
+}
+
+interface Props {
+  items: BreadcrumbItem[]
+}
+
+const { items } = Astro.props
+---
+
+<nav aria-label='Breadcrumb' class='mb-5 border-b border-slate-200 pb-3'>
+  <ol class='flex flex-wrap items-center gap-x-1 gap-y-0.5 text-[11px] font-medium tracking-wide'>
+    {
+      items.map((item, i) => {
+        const isLast = i === items.length - 1
+        return (
+          <li class='flex items-center gap-1'>
+            {i > 0 && (
+              <svg
+                xmlns='http://www.w3.org/2000/svg'
+                viewBox='0 0 24 24'
+                fill='none'
+                stroke='currentColor'
+                stroke-width='2'
+                stroke-linecap='round'
+                stroke-linejoin='round'
+                class='h-3 w-3 text-slate-400'
+                aria-hidden='true'
+              >
+                <polyline points='9 18 15 12 9 6'></polyline>
+              </svg>
+            )}
+            {isLast || !item.href ? (
+              <span
+                class='font-semibold text-slate-800'
+                aria-current={isLast ? 'page' : undefined}
+                data-breadcrumb-segment={item.segment}
+              >
+                {item.label}
+              </span>
+            ) : (
+              <a
+                href={item.href}
+                class='text-slate-500 hover:text-blue-600 transition-colors'
+                data-breadcrumb-segment={item.segment}
+              >
+                {item.label}
+              </a>
+            )}
+          </li>
+        )
+      })
+    }
+  </ol>
+</nav>

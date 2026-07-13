@@ -1,0 +1,324 @@
+---
+import DashboardLayout from '@/dashboard/layouts/DashboardLayout.astro'
+import Card from '@/dashboard/components/ui/Card.astro'
+
+const polymers = [
+  { value: '',     label: 'Polímero por defecto (opcional)' },
+  { value: 'pe',   label: 'PE (Polietileno)' },
+  { value: 'hdpe', label: 'HDPE' },
+  { value: 'pp',   label: 'PP (Polipropileno)' },
+  { value: 'pet',  label: 'PET' },
+  { value: 'abs',  label: 'ABS' },
+  { value: 'ps',   label: 'PS (Poliestireno)' }
+]
+---
+
+<DashboardLayout title='Clientes' active='clients'>
+  <div class='mb-6 flex items-start justify-between gap-4'>
+    <div>
+      <div class='text-[10px] font-semibold uppercase tracking-widest text-slate-400'>
+        Ecotecplast ColorHub
+      </div>
+      <h1 class='text-2xl font-bold text-slate-900'>Clientes</h1>
+      <p class='mt-1 text-sm text-slate-500'>
+        Directorio de clientes. Cada corrida de igualación debe asociarse a uno.
+      </p>
+    </div>
+    <button
+      id='open-new-client'
+      type='button'
+      class='inline-flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-700 focus:ring-offset-2'
+    >
+      <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' class='h-4 w-4'>
+        <line x1='12' y1='5' x2='12' y2='19'></line>
+        <line x1='5' y1='12' x2='19' y2='12'></line>
+      </svg>
+      Nuevo cliente
+    </button>
+  </div>
+
+  <Card title='Directorio' eyebrow='Cargando…'>
+    <div class='mb-4'>
+      <label for='client-search' class='sr-only'>Buscar clientes</label>
+      <div class='relative'>
+        <span class='pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400'>
+          <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' class='h-4 w-4'>
+            <circle cx='11' cy='11' r='8'></circle>
+            <line x1='21' y1='21' x2='16.65' y2='16.65'></line>
+          </svg>
+        </span>
+        <input
+          id='client-search'
+          type='search'
+          placeholder='Buscar por nombre o correo…'
+          class='block w-full rounded-lg border border-slate-200 bg-white py-2 pl-10 pr-3 text-sm text-slate-800 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:blue-500'
+        />
+      </div>
+    </div>
+
+    <div class='overflow-x-auto'>
+      <table class='w-full text-sm'>
+        <thead>
+          <tr class='text-left text-[10px] font-semibold uppercase tracking-widest text-slate-400'>
+            <th class='px-3 py-3'>Nombre</th>
+            <th class='px-3 py-3'>Contacto</th>
+            <th class='px-3 py-3'>Polímero por defecto</th>
+            <th class='px-3 py-3'>Notas</th>
+            <th class='px-3 py-3'>Registrado</th>
+          </tr>
+        </thead>
+        <tbody id='clients-tbody'>
+          {Array.from({ length: 6 }).map(() => (
+            <tr class='border-t border-slate-100 [&_td]:px-3 [&_td]:py-2.5'>
+              <td><div class='h-4 w-32 animate-pulse rounded bg-slate-200' /></td>
+              <td><div class='h-3.5 w-40 animate-pulse rounded bg-slate-200' /></td>
+              <td><div class='h-3.5 w-10 animate-pulse rounded bg-slate-200' /></td>
+              <td><div class='h-3.5 w-48 animate-pulse rounded bg-slate-200' /></td>
+              <td><div class='h-3.5 w-16 animate-pulse rounded bg-slate-200' /></td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <div id='no-results' class='hidden px-3 py-6 text-center text-xs text-slate-400'>
+        Ningún cliente coincide con la búsqueda.
+      </div>
+      <div id='empty-state' class='hidden px-3 py-6 text-center text-xs text-slate-400'>
+        Aún no hay clientes. Haz clic en <b>Nuevo cliente</b> para agregar el primero.
+      </div>
+    </div>
+  </Card>
+
+  {/* Modal */}
+  <dialog
+    id='new-client-modal'
+    class='fixed inset-0 m-auto w-full max-w-md rounded-2xl bg-white p-0 shadow-2xl backdrop:bg-slate-900/50 backdrop:backdrop-blur-sm'
+  >
+    <form id='new-client-form' class='divide-y divide-slate-100'>
+      <header class='flex items-center justify-between px-6 py-4'>
+        <div>
+          <h2 class='text-base font-bold text-slate-900'>Nuevo cliente</h2>
+          <p class='mt-0.5 text-xs text-slate-500'>Agrega un cliente al directorio.</p>
+        </div>
+        <button
+          type='button'
+          id='close-new-client'
+          class='rounded-md p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600'
+          aria-label='Cerrar'
+        >
+          <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' class='h-5 w-5'>
+            <line x1='18' y1='6' x2='6' y2='18'></line>
+            <line x1='6' y1='6' x2='18' y2='18'></line>
+          </svg>
+        </button>
+      </header>
+
+      <div class='space-y-4 px-6 py-5'>
+        <div>
+          <label for='new-client-name' class='ch-label'>Nombre *</label>
+          <input
+            id='new-client-name'
+            name='name'
+            type='text'
+            required
+            class='ch-input'
+            placeholder='ej. Automotive Plastics Corp'
+          />
+        </div>
+        <div class='grid gap-4 sm:grid-cols-2'>
+          <div>
+            <label for='new-client-email' class='ch-label'>Correo</label>
+            <input id='new-client-email' name='contact_email' type='email' class='ch-input' placeholder='contacto@ejemplo.com' />
+          </div>
+          <div>
+            <label for='new-client-phone' class='ch-label'>Teléfono</label>
+            <input id='new-client-phone' name='contact_phone' type='tel' class='ch-input' placeholder='+52 …' />
+          </div>
+        </div>
+        <div>
+          <label for='new-client-polymer' class='ch-label'>Polímero portador por defecto</label>
+          <select id='new-client-polymer' name='default_carrier_polymer' class='ch-input'>
+            {polymers.map((p) => <option value={p.value}>{p.label}</option>)}
+          </select>
+          <p class='mt-1 text-[11px] text-slate-500'>Se selecciona automáticamente en el Igualador de Color al elegir este cliente.</p>
+        </div>
+        <div>
+          <label for='new-client-notes' class='ch-label'>Notas</label>
+          <textarea id='new-client-notes' name='notes' rows='3' class='ch-input' placeholder='Notas internas opcionales'></textarea>
+        </div>
+        <div id='new-client-error' class='hidden rounded-lg border border-rose-300 bg-rose-50 p-2.5 text-xs text-rose-900'></div>
+      </div>
+
+      <footer class='flex items-center justify-end gap-2 px-6 py-4'>
+        <button
+          type='button'
+          id='cancel-new-client'
+          class='rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50'
+        >
+          Cancelar
+        </button>
+        <button
+          type='submit'
+          id='submit-new-client'
+          class='rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-60'
+        >
+          Agregar cliente
+        </button>
+      </footer>
+    </form>
+  </dialog>
+</DashboardLayout>
+
+<script>
+  document.addEventListener('astro:page-load', () => {
+    const tbody = document.getElementById('clients-tbody') as HTMLTableSectionElement
+    if (!tbody) return
+    const search = document.getElementById('client-search') as HTMLInputElement | null
+    const noResults = document.getElementById('no-results')
+    const emptyState = document.getElementById('empty-state')
+    let allRows: HTMLTableRowElement[] = []
+
+    const applyFilter = () => {
+      const term = (search?.value ?? '').trim().toLowerCase()
+      let visibleCount = 0
+      allRows.forEach((row) => {
+        const hay = row.dataset.search ?? ''
+        const show = term === '' || hay.includes(term)
+        row.hidden = !show
+        if (show) visibleCount++
+      })
+      if (noResults) noResults.classList.toggle('hidden', visibleCount > 0 || allRows.length === 0)
+    }
+
+    search?.addEventListener('input', applyFilter)
+
+    const renderRows = (clients: Array<{
+      id: number
+      name: string
+      contact_email: string | null
+      contact_phone: string | null
+      default_carrier_polymer: string | null
+      notes: string | null
+      created_at: string
+    }>) => {
+      tbody.innerHTML = ''
+      allRows = []
+
+      if (clients.length === 0) {
+        emptyState?.classList.remove('hidden')
+        return
+      }
+
+      const fmt = (d: string) => new Date(d).toLocaleDateString('es-MX', { year: '2-digit', month: 'short', day: '2-digit' })
+
+      clients.forEach((c) => {
+        const tr = document.createElement('tr')
+        tr.className = 'border-t border-slate-100 hover:bg-slate-50 [&_td]:px-3 [&_td]:py-2.5'
+        tr.dataset.clientRow = ''
+        tr.dataset.search = `${c.name} ${c.contact_email ?? ''}`.toLowerCase()
+
+        const contact = [c.contact_email, c.contact_phone].filter(Boolean).join(' · ') || '—'
+
+        tr.innerHTML = `
+          <td>
+            <a href="/dashboard/clients/${c.id}" class="inline-flex items-center gap-1.5 font-medium text-slate-800 hover:text-blue-600 hover:underline">
+              ${c.name}
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-3.5 w-3.5 text-slate-400">
+                <polyline points="9 18 15 12 9 6"></polyline>
+              </svg>
+            </a>
+          </td>
+          <td class="text-xs text-slate-600">${contact}</td>
+          <td class="text-xs uppercase text-slate-600">${c.default_carrier_polymer ?? '—'}</td>
+          <td class="max-w-xs truncate text-xs text-slate-600" title="${c.notes ?? ''}">${c.notes ?? '—'}</td>
+          <td class="text-xs text-slate-500">${fmt(c.created_at)}</td>
+        `
+        tbody.appendChild(tr)
+        allRows.push(tr)
+      })
+
+      applyFilter()
+    }
+
+    fetch('/api/clients')
+      .then((r) => r.json())
+      .then((data) => {
+        const clients = data.clients ?? []
+        renderRows(clients)
+        const card = document.querySelector('[data-card-eyebrow]') as HTMLElement | null
+        if (card) card.textContent = `${clients.length} total`
+      })
+      .catch(() => {
+        tbody.innerHTML = '<tr><td colspan="5" class="px-3 py-6 text-center text-xs text-rose-600">Fallo al cargar los clientes.</td></tr>'
+      })
+
+    // --- Modal open / close / submit ---
+    const modal = document.getElementById('new-client-modal') as HTMLDialogElement | null
+    const openBtn = document.getElementById('open-new-client')
+    const closeBtn = document.getElementById('close-new-client')
+    const cancelBtn = document.getElementById('cancel-new-client')
+    const form = document.getElementById('new-client-form') as HTMLFormElement | null
+    const errBox = document.getElementById('new-client-error') as HTMLDivElement | null
+    const submit = document.getElementById('submit-new-client') as HTMLButtonElement | null
+
+    const openModal = () => modal?.showModal()
+    const closeModal = () => {
+      modal?.close()
+      form?.reset()
+      errBox?.classList.add('hidden')
+    }
+
+    openBtn?.addEventListener('click', openModal)
+    closeBtn?.addEventListener('click', closeModal)
+    cancelBtn?.addEventListener('click', closeModal)
+    modal?.addEventListener('click', (event) => {
+      if (event.target === modal) closeModal()
+    })
+
+    form?.addEventListener('submit', async (event) => {
+      event.preventDefault()
+      if (!form || !submit) return
+      errBox?.classList.add('hidden')
+
+      const fd = new FormData(form)
+      const payload = {
+        name: String(fd.get('name') ?? '').trim(),
+        contact_email: String(fd.get('contact_email') ?? '').trim() || null,
+        contact_phone: String(fd.get('contact_phone') ?? '').trim() || null,
+        default_carrier_polymer: String(fd.get('default_carrier_polymer') ?? '') || null,
+        notes: String(fd.get('notes') ?? '').trim() || null
+      }
+
+      if (!payload.name) {
+        if (errBox) {
+          errBox.textContent = 'El nombre del cliente es obligatorio.'
+          errBox.classList.remove('hidden')
+        }
+        return
+      }
+
+      submit.disabled = true
+      submit.textContent = 'Agregando…'
+
+      const resp = await fetch('/api/clients', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(payload)
+      })
+
+      if (!resp.ok) {
+        const body = (await resp.json().catch(() => ({}))) as { error?: string }
+        if (errBox) {
+          errBox.textContent =
+            body?.error === 'client_name_exists'
+              ? 'Ya existe un cliente con ese nombre.'
+              : body?.error ?? `Error del servidor (${resp.status})`
+          errBox.classList.remove('hidden')
+        }
+        submit.disabled = false
+        submit.textContent = 'Agregar cliente'
+        return
+      }
+      location.reload()
+    })
+  })
+</script>

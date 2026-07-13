@@ -1,0 +1,7 @@
+---
+// The /dashboard/clients/[id]/jobs path isn't a page — jobs are shown on
+// the client detail page. Redirect there if someone lands here via the
+// breadcrumb trail on a job-detail page.
+const { id } = Astro.params
+return Astro.redirect(`/dashboard/clients/${id}`)
+---

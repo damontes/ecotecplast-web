@@ -1,0 +1,20 @@
+---
+import NumberField from '@/dashboard/components/ui/NumberField.astro'
+---
+
+<div class='flex h-full w-full flex-col rounded-lg bg-slate-50 p-5 ring-1 ring-slate-200'>
+  <div class='mb-3'>
+    <h3 class='text-sm font-semibold text-slate-800'>
+      Punto Base · Calibración del Chip en Blanco
+    </h3>
+    <p class='mt-1 text-xs leading-relaxed text-slate-500'>
+      Ingresa las coordenadas de un chip de prueba moldeado con 0 % de colorante. Se envía
+      directamente al motor de igualación y no se guarda en la base de datos.
+    </p>
+  </div>
+  <div class='mt-auto grid grid-cols-3 gap-3'>
+    <NumberField id='baseline-l' label='L*' placeholder='0.00' align='center' accent='l' />
+    <NumberField id='baseline-a' label='a*' placeholder='0.00' align='center' accent='a' />
+    <NumberField id='baseline-b' label='b*' placeholder='0.00' align='center' accent='b' />
+  </div>
+</div>

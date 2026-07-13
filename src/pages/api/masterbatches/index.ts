@@ -1,0 +1,113 @@
+import type { APIRoute } from 'astro'
+import { createSupabaseServerClient } from '@/lib/supabase/server'
+
+interface CalibrationPointInput {
+  letdown_percentage: number
+  lab_l: number
+  lab_a: number
+  lab_b: number
+}
+
+interface CreateBody {
+  provider_id?: number | null
+  product_name: string
+  supplier_sku: string
+  color_index_num?: string | null
+  base_carrier_polymer: string
+  current_stock_kg?: number
+  internal_notes?: string | null
+  calibration: CalibrationPointInput[]
+}
+
+export const GET: APIRoute = async ({ request, cookies }) => {
+  const supabase = createSupabaseServerClient(request, cookies)
+  const { data, error } = await supabase
+    .from('masterbatches')
+    .select(
+      `
+        id,
+        product_name,
+        supplier_sku,
+        color_index_num,
+        base_carrier_polymer,
+        current_stock_kg,
+        internal_notes,
+        provider_id,
+        providers ( name ),
+        calibration_data ( letdown_percentage, lab_l, lab_a, lab_b )
+      `
+    )
+    .order('id', { ascending: false })
+
+  if (error) return json({ error: error.message }, 500)
+  return json({ masterbatches: data ?? [] })
+}
+
+export const POST: APIRoute = async ({ request, cookies, locals }) => {
+  if (!locals.user?.isAdmin) return json({ error: 'unauthorized' }, 401)
+
+  let body: CreateBody
+  try {
+    body = (await request.json()) as CreateBody
+  } catch {
+    return json({ error: 'invalid_json' }, 400)
+  }
+
+  if (!body.product_name || !body.supplier_sku || !body.base_carrier_polymer) {
+    return json({ error: 'missing_required_fields' }, 400)
+  }
+  if (!Array.isArray(body.calibration) || body.calibration.length < 3) {
+    return json({ error: 'calibration_requires_3_points' }, 400)
+  }
+
+  const supabase = createSupabaseServerClient(request, cookies)
+
+  const { data: inserted, error: insertErr } = await supabase
+    .from('masterbatches')
+    .insert({
+      provider_id: body.provider_id ?? null,
+      product_name: body.product_name,
+      supplier_sku: body.supplier_sku,
+      color_index_num: body.color_index_num ?? null,
+      base_carrier_polymer: body.base_carrier_polymer,
+      current_stock_kg: body.current_stock_kg ?? 0,
+      internal_notes: body.internal_notes ?? null,
+      organization_id: locals.user.organizationId
+    })
+    .select('id')
+    .single()
+
+  if (insertErr) {
+    if (insertErr.code === '23505') {
+      return json({ error: 'supplier_sku_already_exists' }, 409)
+    }
+    return json({ error: insertErr.message }, 500)
+  }
+
+  const masterbatchId = inserted.id
+  const calibrationRows = body.calibration.map((c) => ({
+    masterbatch_id: masterbatchId,
+    letdown_percentage: c.letdown_percentage,
+    lab_l: c.lab_l,
+    lab_a: c.lab_a,
+    lab_b: c.lab_b
+    // No organization_id — calibration_data doesn't have it; scoping is
+    // inherited through masterbatch_id per the RLS policy.
+  }))
+
+  const { error: calibErr } = await supabase.from('calibration_data').insert(calibrationRows)
+  if (calibErr) {
+    // Attempt rollback of the masterbatch row.
+    await supabase.from('masterbatches').delete().eq('id', masterbatchId)
+    return json({ error: `calibration_insert_failed: ${calibErr.message}` }, 500)
+  }
+
+  return json({ id: masterbatchId }, 201)
+}
+
+function json(body: unknown, status = 200) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { 'content-type': 'application/json' }
+  })
+}

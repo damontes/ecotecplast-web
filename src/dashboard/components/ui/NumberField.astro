@@ -1,0 +1,53 @@
+---
+interface Props {
+  id: string
+  label: string
+  name?: string
+  placeholder?: string
+  value?: string | number
+  step?: string | number
+  size?: 'sm' | 'lg'
+  align?: 'left' | 'center'
+  accent?: 'l' | 'a' | 'b'
+}
+
+const {
+  id,
+  label,
+  name,
+  placeholder,
+  value,
+  step = '0.01',
+  size = 'sm',
+  align = 'left',
+  accent
+} = Astro.props
+
+const accentClass =
+  accent === 'l'
+    ? 'border-b-2 border-slate-800'
+    : accent === 'a'
+      ? 'border-b-2 border-rose-500'
+      : accent === 'b'
+        ? 'border-b-2 border-amber-400'
+        : ''
+---
+
+<div>
+  <label for={id} class:list={['ch-label', align === 'center' && 'text-center']}>
+    {label}
+  </label>
+  <input
+    id={id}
+    name={name ?? id}
+    type='number'
+    step={step}
+    placeholder={placeholder}
+    value={value}
+    class:list={[
+      size === 'lg' ? 'ch-input-lg' : 'ch-input',
+      align === 'center' && 'text-center',
+      accentClass
+    ]}
+  />
+</div>

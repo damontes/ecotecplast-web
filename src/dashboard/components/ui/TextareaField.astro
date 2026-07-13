@@ -1,0 +1,21 @@
+---
+interface Props {
+  id: string
+  label: string
+  name?: string
+  placeholder?: string
+  rows?: number
+}
+
+const { id, label, name, placeholder, rows = 4 } = Astro.props
+---
+
+<div>
+  <label for={id} class='ch-label'>{label}</label>
+  <textarea
+    id={id}
+    name={name ?? id}
+    rows={rows}
+    placeholder={placeholder}
+    class='ch-input resize-y'></textarea>
+</div>

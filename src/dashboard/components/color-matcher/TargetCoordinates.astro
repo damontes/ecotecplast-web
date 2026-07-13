@@ -1,0 +1,38 @@
+---
+import Card from '@/dashboard/components/ui/Card.astro'
+import NumberField from '@/dashboard/components/ui/NumberField.astro'
+---
+
+<Card
+  title='Coordenadas Objetivo'
+  eyebrow='Paso 02'
+  right='CIELAB · D65/10°'
+  class='flex h-full w-full flex-col'
+>
+  <div class='mt-auto grid grid-cols-1 gap-4 sm:grid-cols-3'>
+    <NumberField
+      id='target-l'
+      label='L* (Luminosidad)'
+      placeholder='0.00'
+      align='center'
+      accent='l'
+      size='lg'
+    />
+    <NumberField
+      id='target-a'
+      label='a* (Rojo / Verde)'
+      placeholder='0.00'
+      align='center'
+      accent='a'
+      size='lg'
+    />
+    <NumberField
+      id='target-b'
+      label='b* (Amarillo / Azul)'
+      placeholder='0.00'
+      align='center'
+      accent='b'
+      size='lg'
+    />
+  </div>
+</Card>

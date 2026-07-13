@@ -1,0 +1,100 @@
+---
+import Card from '@/dashboard/components/ui/Card.astro'
+import SelectField from '@/dashboard/components/ui/SelectField.astro'
+import { createSupabaseServerClient } from '@/lib/supabase/server'
+
+const supabase = createSupabaseServerClient(Astro.request, Astro.cookies)
+const [{ data: clients }] = await Promise.all([
+  supabase
+    .from('clients')
+    .select('id, name, default_carrier_polymer')
+    .order('name')
+])
+
+const clientOptions =
+  (clients ?? []).map((c) => ({
+    value: String(c.id),
+    label: c.name,
+    defaultPolymer: c.default_carrier_polymer ?? ''
+  }))
+
+const polymers = [
+  { value: 'pe', label: 'PE (Polyethylene)' },
+  { value: 'hdpe', label: 'HDPE' },
+  { value: 'pp', label: 'PP (Polypropylene)' },
+  { value: 'pet', label: 'PET' },
+  { value: 'abs', label: 'ABS' },
+  { value: 'ps', label: 'PS (Polystyrene)' }
+]
+
+// Named QC tolerance standards. Values match company practice; ceiling is 2.0.
+const tolerances = [
+  { value: '1.0', label: 'Estricta (ΔE ≤ 1.0)' },
+  { value: '1.5', label: 'Estándar (ΔE ≤ 1.5)' },
+  { value: '2.0', label: 'Comercial (ΔE ≤ 2.0)' }
+]
+
+const clientOptionsForSelect = [
+  { value: '', label: clientOptions.length ? '— Selecciona un cliente —' : 'Aún no hay clientes — agrega uno' },
+  ...clientOptions.map((c) => ({ value: c.value, label: c.label }))
+]
+
+// Serialize the polymer-map for the client script (so picking a client
+// auto-selects that client's default carrier polymer, if any).
+const clientDefaultsJson = JSON.stringify(
+  Object.fromEntries(clientOptions.map((c) => [c.value, c.defaultPolymer]))
+)
+---
+
+<Card title='Especificaciones del Material' eyebrow='Paso 01'>
+  <div class='grid gap-4 sm:grid-cols-3'>
+    <div>
+      <SelectField id='client-id' label='Cliente *' options={clientOptionsForSelect} value='' />
+      {
+        clientOptions.length === 0 && (
+          <p class='mt-1.5 text-[11px] text-slate-500'>
+            No hay clientes registrados. Agrega uno en <a href='/dashboard/clients' class='font-semibold text-blue-600 hover:underline'>Clientes</a>.
+          </p>
+        )
+      }
+    </div>
+    <SelectField id='carrier-polymer' label='Polímero Portador *' options={polymers} value='pe' />
+    <SelectField id='pass-threshold' label='Tolerancia de Aprobación *' options={tolerances} value='1.0' />
+  </div>
+
+  <div class='mt-4 flex items-center gap-2 rounded-md bg-slate-50 px-3 py-2 text-[11px] text-slate-500'>
+    <svg
+      xmlns='http://www.w3.org/2000/svg'
+      viewBox='0 0 24 24'
+      fill='none'
+      stroke='currentColor'
+      stroke-width='2'
+      stroke-linecap='round'
+      stroke-linejoin='round'
+      class='h-3.5 w-3.5 flex-shrink-0 text-slate-400'
+    >
+      <circle cx='12' cy='12' r='10'></circle>
+      <line x1='12' y1='16' x2='12' y2='12'></line>
+      <line x1='12' y1='8' x2='12.01' y2='8'></line>
+    </svg>
+    <span>
+      El polímero portador restringe qué masterbatches son elegibles para la igualación — un MB con portador PE no dispersa correctamente en resina PP. El identificador de trabajo se asigna automáticamente después de correr la igualación.
+    </span>
+  </div>
+</Card>
+
+<script is:inline set:html={`window.__clientDefaults = ${clientDefaultsJson};`}></script>
+<script>
+  // Auto-select the client's default carrier polymer when the client is chosen.
+  // Wrap in astro:page-load so the listener re-attaches on every ClientRouter
+  // navigation (top-level setup only runs once and breaks after the first nav).
+  document.addEventListener('astro:page-load', () => {
+    const clientSel = document.getElementById('client-id') as HTMLSelectElement | null
+    const polymerSel = document.getElementById('carrier-polymer') as HTMLSelectElement | null
+    clientSel?.addEventListener('change', () => {
+      const map = (window as unknown as { __clientDefaults?: Record<string, string> }).__clientDefaults ?? {}
+      const def = map[clientSel.value]
+      if (def && polymerSel) polymerSel.value = def
+    })
+  })
+</script>

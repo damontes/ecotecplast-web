@@ -1,0 +1,426 @@
+---
+import Card from '@/dashboard/components/ui/Card.astro'
+import MaterialSpecs from '@/dashboard/components/color-matcher/MaterialSpecs.astro'
+import MachineBaseline from '@/dashboard/components/color-matcher/MachineBaseline.astro'
+import TargetCoordinates from '@/dashboard/components/color-matcher/TargetCoordinates.astro'
+import MatchSuccess from '@/dashboard/components/color-matcher/MatchSuccess.astro'
+import MatchFailure from '@/dashboard/components/color-matcher/MatchFailure.astro'
+---
+
+<div class='space-y-6' data-color-matcher>
+  {/* Inputs stage */}
+  <div data-stage='inputs' class='space-y-6'>
+    <MaterialSpecs />
+
+    <Card title='Coordenadas de Máquina y Objetivo' eyebrow='Paso 02'>
+      <div class='grid items-stretch gap-6 lg:grid-cols-5'>
+        <div class='flex lg:col-span-2'>
+          <MachineBaseline />
+        </div>
+        <div class='flex lg:col-span-3'>
+          <TargetCoordinates />
+        </div>
+      </div>
+      <div id='matcher-error' class='mt-6 hidden rounded-lg border border-rose-300 bg-rose-50 p-3 text-sm text-rose-900'></div>
+      <div class='mt-8'>
+        <button
+          id='run-match'
+          type='button'
+          class='inline-flex w-full items-center justify-center gap-3 rounded-lg bg-blue-600 px-6 py-4 text-lg font-semibold text-white shadow-sm transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-60'
+        >
+          <svg
+            xmlns='http://www.w3.org/2000/svg'
+            viewBox='0 0 24 24'
+            fill='none'
+            stroke='currentColor'
+            stroke-width='2.25'
+            stroke-linecap='round'
+            stroke-linejoin='round'
+            class='h-5 w-5'
+          >
+            <polygon points='5 3 19 12 5 21 5 3'></polygon>
+          </svg>
+          <span data-label>Ejecutar Motor de Igualación</span>
+        </button>
+      </div>
+    </Card>
+  </div>
+
+  {/* Result: success */}
+  <div data-stage='success' hidden>
+    <MatchSuccess />
+  </div>
+
+  {/* Result: failure */}
+  <div data-stage='failure' hidden>
+    <MatchFailure />
+  </div>
+</div>
+
+<script>
+  type Stage = 'inputs' | 'success' | 'failure'
+
+  interface RecipeItem {
+    masterbatch_id: number
+    sku: string
+    product_name: string
+    provider?: string
+    percentage: number
+  }
+  interface Suggestion {
+    id: number
+    palette: string
+    code: string
+    name: string
+    lab: [number, number, number]
+    delta_e_to_target: number
+    reachable_now: boolean
+    recipe: RecipeItem[] | null
+  }
+  interface MatchResponse {
+    success: boolean
+    final_delta_e: number
+    target_coordinates: [number, number, number]
+    predicted_coordinates?: [number, number, number]
+    closest_achievable_coordinates?: [number, number, number]
+    recipe?: RecipeItem[]
+    message?: string
+    job_identifier?: string | null
+    match_history_id?: number | null
+    carrier_polymer?: string | null
+    pass_threshold?: number
+    suggestions?: Suggestion[]
+  }
+
+  // Re-run setup on every ClientRouter navigation — top-level DOM queries
+  // would only run once and break the button on subsequent visits.
+  document.addEventListener('astro:page-load', () => {
+  const root = document.querySelector<HTMLElement>('[data-color-matcher]')
+  if (!root) return
+
+  const toleranceLabel = (tol: number | undefined): string => {
+    if (tol === 1.0) return 'Estricta'
+    if (tol === 1.5) return 'Estándar'
+    if (tol === 2.0) return 'Comercial'
+    return `ΔE ≤ ${tol?.toFixed(1) ?? '?'}`
+  }
+
+  const stages: Record<Stage, HTMLElement | null> = {
+    inputs: root?.querySelector<HTMLElement>('[data-stage="inputs"]') ?? null,
+    success: root?.querySelector<HTMLElement>('[data-stage="success"]') ?? null,
+    failure: root?.querySelector<HTMLElement>('[data-stage="failure"]') ?? null
+  }
+
+  const show = (stage: Stage) => {
+    for (const key of Object.keys(stages) as Stage[]) {
+      const el = stages[key]
+      if (!el) continue
+      el.hidden = key !== stage
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  const num = (id: string) => {
+    const el = document.getElementById(id) as HTMLInputElement | null
+    if (!el) return NaN
+    return Number(el.value)
+  }
+  const str = (id: string) => (document.getElementById(id) as HTMLInputElement | HTMLSelectElement | null)?.value ?? ''
+
+  const labToRgbCss = (lab: [number, number, number]): string => {
+    // Rough CIELAB (D65) → sRGB conversion for preview swatches only.
+    const [L, a, b] = lab
+    const fy = (L + 16) / 116
+    const fx = a / 500 + fy
+    const fz = fy - b / 200
+    const eps = 216 / 24389
+    const kappa = 24389 / 27
+    const xr = fx ** 3 > eps ? fx ** 3 : (116 * fx - 16) / kappa
+    const yr = L > 8 ? fy ** 3 : L / kappa
+    const zr = fz ** 3 > eps ? fz ** 3 : (116 * fz - 16) / kappa
+    const X = xr * 0.95047
+    const Y = yr * 1.0
+    const Z = zr * 1.08883
+    let r = X * 3.2406 + Y * -1.5372 + Z * -0.4986
+    let g = X * -0.9689 + Y * 1.8758 + Z * 0.0415
+    let bl = X * 0.0557 + Y * -0.204 + Z * 1.057
+    const toSrgb = (c: number) =>
+      c <= 0.0031308 ? 12.92 * c : 1.055 * Math.pow(Math.max(0, c), 1 / 2.4) - 0.055
+    r = Math.round(Math.min(1, Math.max(0, toSrgb(r))) * 255)
+    g = Math.round(Math.min(1, Math.max(0, toSrgb(g))) * 255)
+    bl = Math.round(Math.min(1, Math.max(0, toSrgb(bl))) * 255)
+    return `rgb(${r}, ${g}, ${bl})`
+  }
+
+  const renderSuccess = (r: MatchResponse) => {
+    const el = document.getElementById('match-success')
+    if (!el) return
+    const dE = r.final_delta_e.toFixed(2)
+    ;(el.querySelector('[data-delta-e]') as HTMLElement).textContent = dE
+    const jobEl = el.querySelector('[data-job-identifier]') as HTMLElement | null
+    if (jobEl) jobEl.textContent = r.job_identifier ?? '—'
+    const tolEl = el.querySelector('[data-tolerance-label]') as HTMLElement | null
+    if (tolEl) tolEl.textContent = toleranceLabel(r.pass_threshold)
+    ;(el.querySelector('[data-swatch-target]') as HTMLDivElement).style.background = labToRgbCss(
+      r.target_coordinates
+    )
+    ;(el.querySelector('[data-swatch-predicted]') as HTMLDivElement).style.background = labToRgbCss(
+      r.predicted_coordinates ?? r.target_coordinates
+    )
+
+    const tbody = el.querySelector('[data-recipe-body]') as HTMLTableSectionElement
+    const batchSizeInput = document.getElementById('batch-size') as HTMLInputElement | null
+    const batchSize = Number(batchSizeInput?.value ?? 100)
+    tbody.innerHTML = ''
+    const totalPct = (r.recipe ?? []).reduce((s, x) => s + x.percentage, 0)
+    ;(r.recipe ?? []).forEach((row, i) => {
+      const tr = document.createElement('tr')
+      tr.className = (i % 2 === 0 ? 'bg-slate-50/50 ' : 'bg-white ') + 'border-t border-slate-100'
+      const grams = (row.percentage / 100) * batchSize * 1000
+      tr.innerHTML = `
+        <td class="px-4 py-3 font-medium text-slate-800">${row.sku}</td>
+        <td class="px-4 py-3 text-slate-600">${row.product_name}</td>
+        <td class="px-4 py-3 text-slate-600">${row.provider ?? '—'}</td>
+        <td class="px-4 py-3 text-right text-slate-600 tabular-nums">${row.percentage.toFixed(3)}</td>
+        <td class="px-4 py-3 text-right font-bold text-slate-900 tabular-nums">${grams.toFixed(1)}</td>
+      `
+      tbody.appendChild(tr)
+    })
+    const totalResin = 100 - totalPct
+    el.querySelector('[data-total-base-resin]')!.textContent = totalResin.toFixed(3)
+  }
+
+  const renderFailure = (r: MatchResponse) => {
+    const el = document.getElementById('match-failure')
+    if (!el) return
+
+    ;(el.querySelector('[data-delta-e]') as HTMLElement).textContent = r.final_delta_e.toFixed(2)
+    ;(el.querySelector('[data-message]') as HTMLElement).textContent =
+      r.message ?? 'Target coordinates fall outside current inventory gamut boundaries.'
+    const tolLabelEl = el.querySelector('[data-tolerance-label]') as HTMLElement | null
+    if (tolLabelEl) tolLabelEl.textContent = toleranceLabel(r.pass_threshold)
+    const tolValueEl = el.querySelector('[data-tolerance-value]') as HTMLElement | null
+    if (tolValueEl) tolValueEl.textContent = (r.pass_threshold ?? 1.0).toFixed(1)
+
+    const closest = r.closest_achievable_coordinates ?? r.predicted_coordinates ?? r.target_coordinates
+    const target = r.target_coordinates
+
+    ;(el.querySelector('[data-swatch-target]') as HTMLDivElement).style.background = labToRgbCss(target)
+    ;(el.querySelector('[data-swatch-closest]') as HTMLDivElement).style.background = labToRgbCss(closest)
+    ;(el.querySelector('[data-target-l]') as HTMLElement).textContent = target[0].toFixed(1)
+    ;(el.querySelector('[data-target-a]') as HTMLElement).textContent = target[1].toFixed(1)
+    ;(el.querySelector('[data-target-b]') as HTMLElement).textContent = target[2].toFixed(1)
+    ;(el.querySelector('[data-closest-l]') as HTMLElement).textContent = closest[0].toFixed(1)
+    ;(el.querySelector('[data-closest-a]') as HTMLElement).textContent = closest[1].toFixed(1)
+    ;(el.querySelector('[data-closest-b]') as HTMLElement).textContent = closest[2].toFixed(1)
+
+    // a*/b* mini-plot: SVG viewbox is 320×320, plot area 20..300 (280 px).
+    // Map ±64 units (covers most industrial pigment gamut) → 280 px.
+    const project = (a: number, b: number): [number, number] => {
+      const clamp = (v: number) => Math.max(-64, Math.min(64, v))
+      const cx = 160 + (clamp(a) / 64) * 140
+      const cy = 160 + (clamp(b) / 64) * 140
+      return [cx, cy]
+    }
+    const [tx, ty] = project(target[1], target[2])
+    const [cx, cy] = project(closest[1], closest[2])
+    const dotT = el.querySelector('[data-dot-target]') as SVGCircleElement
+    const dotC = el.querySelector('[data-dot-closest]') as SVGCircleElement
+    const line = el.querySelector('[data-line]') as SVGLineElement
+    dotT.setAttribute('cx', String(tx))
+    dotT.setAttribute('cy', String(ty))
+    dotC.setAttribute('cx', String(cx))
+    dotC.setAttribute('cy', String(cy))
+    line.setAttribute('x1', String(tx))
+    line.setAttribute('y1', String(ty))
+    line.setAttribute('x2', String(cx))
+    line.setAttribute('y2', String(cy))
+
+    // Diagnose the dominant gap direction and rewrite the tips list to fit.
+    const dL = target[0] - closest[0]
+    const da = target[1] - closest[1]
+    const db = target[2] - closest[2]
+    const tips: string[] = []
+    if (Math.abs(dL) > 3) {
+      tips.push(
+        dL < 0
+          ? 'El objetivo es más oscuro que el gamut alcanzable — agrega un masterbatch de tinte fuerte o un negro tintorial.'
+          : 'El objetivo es más claro que el gamut alcanzable — reduce la carga de pigmento o agrega un blanco opaco (TiO₂).'
+      )
+    }
+    if (Math.abs(da) > 3) {
+      tips.push(
+        da > 0
+          ? 'Falta fuerza roja/magenta en el eje a* — agrega un pigmento rojo o magenta más fuerte.'
+          : 'Falta fuerza verde/cian en el eje a* — agrega un pigmento verde o cian ftalocianina.'
+      )
+    }
+    if (Math.abs(db) > 3) {
+      tips.push(
+        db > 0
+          ? 'Falta fuerza amarilla en el eje b* — agrega un amarillo más fuerte (P.Y. 180 o similar).'
+          : 'Falta fuerza azul en el eje b* — agrega un azul ftalocianina o ultramar.'
+      )
+    }
+    if (tips.length === 0) {
+      tips.push('Posible inexactitud en la curva de calibración — remuestrea los chips a 0.5 / 1.0 / 2.0 %.')
+    }
+    const gapList = el.querySelector('[data-gap-list]') as HTMLUListElement
+    gapList.innerHTML = tips.map((t) => `<li>${t}</li>`).join('')
+
+    // Suggestions split into two sections:
+    //   * "Adquirir" (unreachable_now) — procurement guidance
+    //   * "Alternativos" (reachable_now) — colors you could offer instead
+    // Each section hides itself if empty; a global empty-state shows only
+    // if BOTH lists are empty (typical when the library is bare).
+    const suggestions = r.suggestions ?? []
+    const adquirirHost = el.querySelector('[data-suggestions-adquirir]') as HTMLElement | null
+    const alternativosHost = el.querySelector('[data-suggestions-alternativos]') as HTMLElement | null
+    const sectionAdquirir = el.querySelector('[data-section-adquirir]') as HTMLElement | null
+    const sectionAlternativos = el.querySelector('[data-section-alternativos]') as HTMLElement | null
+    const sectionEmpty = el.querySelector('[data-suggestions-empty]') as HTMLElement | null
+
+    const renderAdquirir = (s: Suggestion): string => {
+      const swatch = labToRgbCss(s.lab)
+      return `
+        <div class='flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50/50 p-3'>
+          <div class='h-12 w-12 flex-shrink-0 rounded-md ring-1 ring-amber-300' style='background: ${swatch}'></div>
+          <div class='min-w-0 flex-1'>
+            <div class='flex items-baseline gap-2'>
+              <span class='text-sm font-semibold text-slate-900'>${s.name}</span>
+              <span class='text-[10px] font-mono uppercase text-slate-400'>${s.palette} · ${s.code}</span>
+            </div>
+            <div class='mt-0.5 text-[11px] text-slate-500'>ΔE al objetivo ${s.delta_e_to_target.toFixed(2)}</div>
+            <div class='mt-1 text-[11px] italic text-amber-800'>Adquiere un pigmento capaz de producir este color.</div>
+          </div>
+        </div>
+      `
+    }
+
+    const renderAlternativo = (s: Suggestion): string => {
+      const swatch = labToRgbCss(s.lab)
+      const recipe = s.recipe && s.recipe.length > 0
+        ? '<div class="mt-1 text-[11px] text-slate-600">Receta: ' +
+          s.recipe
+            .map((row) => `<span class="tabular-nums">${row.percentage.toFixed(2)}% ${row.sku}</span>`)
+            .join('<span class="text-slate-300"> · </span>') +
+          '</div>'
+        : ''
+      return `
+        <div class='flex items-start gap-3 rounded-lg border border-emerald-200 bg-emerald-50/40 p-3'>
+          <div class='h-12 w-12 flex-shrink-0 rounded-md ring-1 ring-emerald-300' style='background: ${swatch}'></div>
+          <div class='min-w-0 flex-1'>
+            <div class='flex items-baseline gap-2'>
+              <span class='text-sm font-semibold text-slate-900'>${s.name}</span>
+              <span class='text-[10px] font-mono uppercase text-slate-400'>${s.palette} · ${s.code}</span>
+            </div>
+            <div class='mt-0.5 text-[11px] text-slate-500'>ΔE al objetivo ${s.delta_e_to_target.toFixed(2)}</div>
+            ${recipe}
+          </div>
+        </div>
+      `
+    }
+
+    const adquirir = suggestions.filter((s) => !s.reachable_now)
+    const alternativos = suggestions.filter((s) => s.reachable_now)
+
+    if (adquirirHost) adquirirHost.innerHTML = adquirir.map(renderAdquirir).join('')
+    if (alternativosHost) alternativosHost.innerHTML = alternativos.map(renderAlternativo).join('')
+
+    if (sectionAdquirir) sectionAdquirir.hidden = adquirir.length === 0
+    if (sectionAlternativos) sectionAlternativos.hidden = alternativos.length === 0
+    if (sectionEmpty) sectionEmpty.classList.toggle('hidden', suggestions.length > 0)
+  }
+
+  const runMatch = async () => {
+    const btn = document.getElementById('run-match') as HTMLButtonElement | null
+    const errBox = document.getElementById('matcher-error') as HTMLDivElement | null
+    if (!btn) return
+
+    if (errBox) {
+      errBox.classList.add('hidden')
+      errBox.textContent = ''
+    }
+
+    const target: [number, number, number] = [num('target-l'), num('target-a'), num('target-b')]
+    const base: [number, number, number] = [num('baseline-l'), num('baseline-a'), num('baseline-b')]
+
+    if (target.some((n) => !Number.isFinite(n)) || base.some((n) => !Number.isFinite(n))) {
+      if (errBox) {
+        errBox.textContent = 'Completa los campos L*, a*, b* tanto del punto base como del objetivo.'
+        errBox.classList.remove('hidden')
+      }
+      return
+    }
+
+    const clientId = str('client-id')
+    const carrierPolymer = str('carrier-polymer')
+    const passThreshold = Number(str('pass-threshold')) || 1.0
+    if (!clientId) {
+      if (errBox) {
+        errBox.textContent = 'Selecciona un cliente antes de correr la igualación.'
+        errBox.classList.remove('hidden')
+      }
+      return
+    }
+    if (!carrierPolymer) {
+      if (errBox) {
+        errBox.textContent = 'Selecciona un polímero portador.'
+        errBox.classList.remove('hidden')
+      }
+      return
+    }
+
+    const labelEl = btn.querySelector('[data-label]')
+    const originalLabel = labelEl?.textContent ?? 'Ejecutar Motor de Igualación'
+    btn.disabled = true
+    if (labelEl) labelEl.textContent = 'Calculando…'
+
+    try {
+      const resp = await fetch('/api/color-match', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          target: { l: target[0], a: target[1], b: target[2] },
+          base: { l: base[0], a: base[1], b: base[2] },
+          client_id: Number(clientId),
+          carrier_polymer: carrierPolymer,
+          pass_threshold: passThreshold
+        })
+      })
+
+      if (!resp.ok) {
+        const body = (await resp.json().catch(() => ({}))) as { error?: string; message?: string }
+        // Prefer server-side human-friendly message (e.g. empty-inventory
+        // guard) over the raw error code.
+        throw new Error(body?.message ?? body?.error ?? `Error del servidor (${resp.status})`)
+      }
+      const data = (await resp.json()) as MatchResponse
+      if (data.success) {
+        renderSuccess(data)
+        show('success')
+      } else {
+        renderFailure(data)
+        show('failure')
+      }
+    } catch (err) {
+      if (errBox) {
+        errBox.textContent = (err as Error).message
+        errBox.classList.remove('hidden')
+      }
+    } finally {
+      btn.disabled = false
+      if (labelEl) labelEl.textContent = originalLabel
+    }
+  }
+
+  root.querySelector('#run-match')?.addEventListener('click', runMatch)
+  root
+    .querySelectorAll('[data-action="reset"]')
+    .forEach((el) => el.addEventListener('click', () => show('inputs')))
+
+  // Temporary preview hook until backend lands: ?state=success|failure
+  const previewState = new URLSearchParams(location.search).get('state')
+  if (previewState === 'success' || previewState === 'failure') show(previewState)
+  })
+</script>

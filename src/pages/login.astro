@@ -1,0 +1,138 @@
+---
+import '@fontsource-variable/montserrat'
+import '@/styles/global.css'
+
+const { url, locals } = Astro
+
+if (locals.user?.isAdmin) {
+  return Astro.redirect('/dashboard/color-matcher')
+}
+
+const next = url.searchParams.get('next') ?? '/dashboard/color-matcher'
+const error = url.searchParams.get('error')
+---
+
+<!doctype html>
+<html lang='en'>
+  <head>
+    <meta charset='UTF-8' />
+    <meta name='viewport' content='width=device-width, initial-scale=1.0' />
+    <link rel='icon' type='image/x-icon' href='/favicon.ico' />
+    <title>Iniciar sesión · Ecotecplast ColorHub</title>
+    <meta name='robots' content='noindex, nofollow' />
+  </head>
+  <body class='min-h-screen bg-slate-100 text-slate-800 antialiased'>
+    <main class='flex min-h-screen items-center justify-center px-6 py-16'>
+      <div class='w-full max-w-md rounded-2xl bg-white p-8 shadow-lg ring-1 ring-slate-200'>
+        <div class='mb-6'>
+          <div class='text-[10px] font-semibold uppercase tracking-widest text-slate-400'>
+            Ecotecplast ColorHub
+          </div>
+          <h1 class='mt-1 text-2xl font-bold text-slate-900'>Iniciar sesión de administrador</h1>
+          <p class='mt-1 text-sm text-slate-500'>
+            Acceso restringido. Sólo cuentas con privilegios de administrador pueden entrar.
+          </p>
+        </div>
+
+        {
+          error === 'forbidden' && (
+            <div class='mb-4 rounded-lg border border-amber-300 bg-amber-50 p-3 text-xs text-amber-900'>
+              Tu cuenta inició sesión pero no tiene acceso de administrador.
+            </div>
+          )
+        }
+        {
+          error === 'invalid' && (
+            <div class='mb-4 rounded-lg border border-rose-300 bg-rose-50 p-3 text-xs text-rose-900'>
+              Correo o contraseña inválidos.
+            </div>
+          )
+        }
+
+        <form id='login-form' class='space-y-4' novalidate>
+          <input type='hidden' name='next' value={next} />
+
+          <div>
+            <label for='email' class='mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500'>
+              Correo
+            </label>
+            <input
+              id='email'
+              name='email'
+              type='email'
+              required
+              autocomplete='email'
+              class='block w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500'
+              placeholder='admin@ecotecplast.com'
+            />
+          </div>
+
+          <div>
+            <label for='password' class='mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500'>
+              Contraseña
+            </label>
+            <input
+              id='password'
+              name='password'
+              type='password'
+              required
+              autocomplete='current-password'
+              class='block w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500'
+              placeholder='••••••••'
+            />
+          </div>
+
+          <div id='login-error' class='hidden rounded-lg border border-rose-300 bg-rose-50 p-3 text-xs text-rose-900'></div>
+
+          <button
+            id='login-submit'
+            type='submit'
+            class='inline-flex w-full items-center justify-center gap-3 rounded-lg bg-blue-600 px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50'
+          >
+            Iniciar sesión
+          </button>
+        </form>
+      </div>
+    </main>
+
+    <script>
+      import { getSupabaseBrowserClient } from '@/lib/supabase/browser'
+
+      const form = document.getElementById('login-form') as HTMLFormElement | null
+      const errBox = document.getElementById('login-error') as HTMLDivElement | null
+      const submit = document.getElementById('login-submit') as HTMLButtonElement | null
+
+      const showError = (msg: string) => {
+        if (!errBox) return
+        errBox.textContent = msg
+        errBox.classList.remove('hidden')
+      }
+
+      form?.addEventListener('submit', async (event) => {
+        event.preventDefault()
+        errBox?.classList.add('hidden')
+        if (!submit) return
+        submit.disabled = true
+        submit.textContent = 'Iniciando sesión…'
+
+        const fd = new FormData(form)
+        const email = String(fd.get('email') ?? '').trim()
+        const password = String(fd.get('password') ?? '')
+        const next = String(fd.get('next') ?? '/dashboard/color-matcher')
+
+        const supabase = getSupabaseBrowserClient()
+        const { error } = await supabase.auth.signInWithPassword({ email, password })
+
+        if (error) {
+          submit.disabled = false
+          submit.textContent = 'Iniciar sesión'
+          showError(error.message || 'Credenciales inválidas.')
+          return
+        }
+
+        // Middleware will re-check admin status on the redirect target.
+        window.location.href = next
+      })
+    </script>
+  </body>
+</html>

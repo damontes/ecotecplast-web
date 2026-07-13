@@ -1,0 +1,61 @@
+---
+import Card from '@/dashboard/components/ui/Card.astro'
+import RecipeTable from '@/dashboard/components/color-matcher/RecipeTable.astro'
+---
+
+<div id='match-success'>
+  <Card title='Verificación de Igualación' eyebrow='Resultado'>
+    <button
+      slot='right'
+      type='button'
+      data-action='reset'
+      class='rounded-md border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500'
+    >
+      Nueva igualación
+    </button>
+    <div class='flex flex-wrap items-center justify-between gap-4 rounded-lg bg-emerald-50 p-5 ring-1 ring-emerald-200'>
+      <div class='flex items-center gap-4'>
+        <span class='inline-flex items-center rounded-md bg-emerald-600 px-3 py-1 text-xs font-bold uppercase tracking-widest text-white'>
+          Aprobado
+        </span>
+        <div>
+          <div class='text-xs font-semibold uppercase tracking-widest text-emerald-700'>
+            Trabajo <span class='font-mono text-emerald-900' data-job-identifier>—</span>
+          </div>
+          <div class='text-sm text-emerald-800'>
+            Aprobado con tolerancia <span data-tolerance-label>—</span>
+          </div>
+        </div>
+      </div>
+      <div class='text-right'>
+        <div class='text-[10px] font-semibold uppercase tracking-widest text-emerald-700'>
+          Delta E
+        </div>
+        <div class='text-3xl font-bold tabular-nums text-emerald-900' data-delta-e>—</div>
+      </div>
+    </div>
+
+    <div class='mt-5 grid gap-4 sm:grid-cols-2'>
+      <div>
+        <div class='ch-label'>Color Objetivo</div>
+        <div
+          class='h-32 rounded-lg ring-1 ring-slate-200'
+          style='background: rgb(58,105,178);'
+          data-swatch-target
+        >
+        </div>
+      </div>
+      <div>
+        <div class='ch-label'>Predicción Actual</div>
+        <div
+          class='h-32 rounded-lg ring-1 ring-slate-200'
+          style='background: rgb(60,108,180);'
+          data-swatch-predicted
+        >
+        </div>
+      </div>
+    </div>
+
+    <RecipeTable />
+  </Card>
+</div>

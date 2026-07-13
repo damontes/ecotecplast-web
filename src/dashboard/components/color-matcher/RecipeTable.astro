@@ -1,0 +1,40 @@
+---
+// Rows are populated at runtime by ColorMatcherApp.astro after /api/color-match
+// resolves. The tbody starts empty; the header stays static.
+---
+
+<div class='mt-6 rounded-lg border border-slate-200 bg-white'>
+  <div class='flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 p-4'>
+    <div class='flex items-center gap-3'>
+      <label for='batch-size' class='text-xs font-semibold uppercase tracking-wide text-slate-500'>
+        Tamaño del Lote (kg)
+      </label>
+      <input
+        id='batch-size'
+        type='number'
+        value='100'
+        step='1'
+        class='w-24 rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-slate-800 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500'
+      />
+    </div>
+    <div class='inline-flex items-center gap-2 rounded-md bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-600'>
+      <span class='uppercase tracking-wide text-slate-400'>Resina Base Restante (kg)</span>
+      <span data-total-base-resin class='font-semibold text-slate-800'>—</span>
+    </div>
+  </div>
+
+  <div class='overflow-x-auto'>
+    <table class='w-full text-sm'>
+      <thead>
+        <tr class='text-left text-[10px] font-semibold uppercase tracking-widest text-slate-400'>
+          <th class='px-4 py-3'>SKU del Masterbatch</th>
+          <th class='px-4 py-3'>Nombre del Producto</th>
+          <th class='px-4 py-3'>Proveedor</th>
+          <th class='px-4 py-3 text-right'>% Carga</th>
+          <th class='px-4 py-3 text-right'>Peso Requerido (g)</th>
+        </tr>
+      </thead>
+      <tbody data-recipe-body></tbody>
+    </table>
+  </div>
+</div>

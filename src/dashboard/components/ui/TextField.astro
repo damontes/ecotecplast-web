@@ -1,0 +1,24 @@
+---
+interface Props {
+  id: string
+  label: string
+  name?: string
+  placeholder?: string
+  value?: string
+  size?: 'sm' | 'lg'
+}
+
+const { id, label, name, placeholder, value, size = 'sm' } = Astro.props
+---
+
+<div>
+  <label for={id} class='ch-label'>{label}</label>
+  <input
+    id={id}
+    name={name ?? id}
+    type='text'
+    placeholder={placeholder}
+    value={value}
+    class:list={[size === 'lg' ? 'ch-input-lg' : 'ch-input']}
+  />
+</div>

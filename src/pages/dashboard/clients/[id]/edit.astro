@@ -1,0 +1,173 @@
+---
+import DashboardLayout from '@/dashboard/layouts/DashboardLayout.astro'
+import Card from '@/dashboard/components/ui/Card.astro'
+---
+
+<DashboardLayout
+  title='Editar Cliente'
+  active='clients'
+  breadcrumbLabels={{ edit: 'Editar' }}
+>
+  <div class='mb-6'>
+    <div class='h-7 w-48 animate-pulse rounded bg-slate-200' id='edit-title-skeleton' />
+  </div>
+
+  <Card title='Datos del Cliente' eyebrow='Edición'>
+    <form id='edit-client-form' class='space-y-4' novalidate>
+      <div>
+        <label for='edit-name' class='ch-label'>Nombre *</label>
+        <input id='edit-name' type='text' required class='ch-input' placeholder='Nombre del cliente' />
+      </div>
+      <div class='grid gap-4 sm:grid-cols-2'>
+        <div>
+          <label for='edit-email' class='ch-label'>Correo</label>
+          <input id='edit-email' type='email' class='ch-input' placeholder='contacto@ejemplo.com' />
+        </div>
+        <div>
+          <label for='edit-phone' class='ch-label'>Teléfono</label>
+          <input id='edit-phone' type='tel' class='ch-input' placeholder='+52 …' />
+        </div>
+      </div>
+      <div>
+        <label for='edit-polymer' class='ch-label'>Polímero portador por defecto</label>
+        <select id='edit-polymer' class='ch-input'>
+          <option value=''>Polímero por defecto (opcional)</option>
+          <option value='pe'>PE (Polietileno)</option>
+          <option value='hdpe'>HDPE</option>
+          <option value='pp'>PP (Polipropileno)</option>
+          <option value='pet'>PET</option>
+          <option value='abs'>ABS</option>
+          <option value='ps'>PS (Poliestireno)</option>
+        </select>
+        <p class='mt-1 text-[11px] text-slate-500'>Se selecciona automáticamente en el Igualador de Color al elegir este cliente.</p>
+      </div>
+      <div>
+        <label for='edit-notes' class='ch-label'>Notas</label>
+        <textarea id='edit-notes' rows='3' class='ch-input' placeholder='Notas internas opcionales' />
+      </div>
+      <div id='edit-error' class='hidden rounded-lg border border-rose-300 bg-rose-50 p-2.5 text-xs text-rose-900'></div>
+      <div id='edit-success' class='hidden rounded-lg border border-emerald-300 bg-emerald-50 p-2.5 text-xs text-emerald-900'></div>
+    </form>
+  </Card>
+
+  <div class='mt-6 flex items-center justify-end gap-3'>
+    <a href='' id='cancel-link'
+       class='rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50'>
+      Cancelar
+    </a>
+    <button type='submit' id='save-btn' form='edit-client-form'
+       class='rounded-lg bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-60'>
+      Guardar cambios
+    </button>
+  </div>
+</DashboardLayout>
+
+<script>
+  document.addEventListener('astro:page-load', () => {
+    // URL guard — see comment on clients/[id].astro for why.
+    if (!/^\/dashboard\/clients\/\d+\/edit\/?$/.test(window.location.pathname)) return
+    const parts = window.location.pathname.replace(/\/$/, '').split('/')
+    const clientId = Number(parts[parts.length - 2])
+    if (!Number.isFinite(clientId)) return
+
+    document.getElementById('cancel-link')?.setAttribute('href', `/dashboard/clients/${clientId}`)
+
+    const errBox = document.getElementById('edit-error')
+    const okBox = document.getElementById('edit-success')
+    const titleSkeleton = document.getElementById('edit-title-skeleton')
+    const saveBtn = document.getElementById('save-btn') as HTMLButtonElement | null
+
+    const showErr = (msg: string) => {
+      if (!errBox) return
+      errBox.textContent = msg
+      errBox.classList.remove('hidden')
+      okBox?.classList.add('hidden')
+    }
+
+    const val = (id: string) => (document.getElementById(id) as HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement | null)?.value ?? ''
+    const setVal = (id: string, v: string) => {
+      const el = document.getElementById(id) as HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement | null
+      if (el) el.value = v
+    }
+
+    // Load existing data
+    fetch(`/api/clients/${clientId}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.error || !data.client) {
+          window.location.href = '/dashboard/clients'
+          return
+        }
+        const c = data.client
+
+        document.title = `Editar ${c.name} · ColorHub`
+        if (titleSkeleton) {
+          titleSkeleton.outerHTML = `<h1 class='text-2xl font-bold text-slate-900'>Editar ${c.name}</h1>`
+        }
+
+        setVal('edit-name', c.name ?? '')
+        setVal('edit-email', c.contact_email ?? '')
+        setVal('edit-phone', c.contact_phone ?? '')
+        setVal('edit-polymer', c.default_carrier_polymer ?? '')
+        setVal('edit-notes', c.notes ?? '')
+      })
+      .catch(() => {
+        window.location.href = '/dashboard/clients'
+      })
+
+    // Submit
+    const form = document.getElementById('edit-client-form') as HTMLFormElement | null
+    form?.addEventListener('submit', async (e) => {
+      e.preventDefault()
+      errBox?.classList.add('hidden')
+      okBox?.classList.add('hidden')
+
+      const payload = {
+        name: val('edit-name').trim(),
+        contact_email: val('edit-email').trim() || null,
+        contact_phone: val('edit-phone').trim() || null,
+        default_carrier_polymer: val('edit-polymer') || null,
+        notes: val('edit-notes').trim() || null
+      }
+
+      if (!payload.name) {
+        showErr('El nombre del cliente es obligatorio.')
+        return
+      }
+
+      if (saveBtn) {
+        saveBtn.disabled = true
+        saveBtn.textContent = 'Guardando…'
+      }
+
+      const resp = await fetch(`/api/clients/${clientId}`, {
+        method: 'PUT',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(payload)
+      })
+
+      if (!resp.ok) {
+        const body = (await resp.json().catch(() => ({}))) as { error?: string }
+        showErr(
+          body?.error === 'client_name_exists'
+            ? 'Ya existe otro cliente con ese nombre.'
+            : body?.error ?? `Error del servidor (${resp.status})`
+        )
+        if (saveBtn) {
+          saveBtn.disabled = false
+          saveBtn.textContent = 'Guardar cambios'
+        }
+        return
+      }
+
+      if (okBox) {
+        okBox.textContent = 'Cambios guardados. Volviendo al detalle…'
+        okBox.classList.remove('hidden')
+        errBox?.classList.add('hidden')
+      }
+      setTimeout(() => {
+        window.location.href = `/dashboard/clients/${clientId}`
+      }, 600)
+    })
+  })
+</script>
