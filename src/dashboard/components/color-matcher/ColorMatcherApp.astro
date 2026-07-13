@@ -152,6 +152,33 @@ import MatchFailure from '@/dashboard/components/color-matcher/MatchFailure.astr
     return `rgb(${r}, ${g}, ${bl})`
   }
 
+  let currentRecipe: RecipeItem[] | null = null
+
+  const updateGrams = () => {
+    const tbody = document.querySelector('[data-recipe-body]') as HTMLTableSectionElement | null
+    const baseResinEl = document.querySelector('[data-total-base-resin]') as HTMLElement | null
+    if (!tbody || !currentRecipe) return
+    const batchSizeInput = document.getElementById('batch-size') as HTMLInputElement | null
+    const batchSize = Number(batchSizeInput?.value ?? 100)
+    const totalPct = currentRecipe.reduce((s, x) => s + x.percentage, 0)
+    tbody.innerHTML = ''
+    currentRecipe.forEach((row, i) => {
+      const tr = document.createElement('tr')
+      tr.className = (i % 2 === 0 ? 'bg-slate-50/50 ' : 'bg-white ') + 'border-t border-slate-100'
+      const grams = (row.percentage / 100) * batchSize * 1000
+      tr.innerHTML = `
+        <td class="px-4 py-3 font-medium text-slate-800">${row.sku}</td>
+        <td class="px-4 py-3 text-slate-600">${row.product_name}</td>
+        <td class="px-4 py-3 text-slate-600">${row.provider ?? '—'}</td>
+        <td class="px-4 py-3 text-right text-slate-600 tabular-nums">${row.percentage.toFixed(3)}</td>
+        <td class="px-4 py-3 text-right font-bold text-slate-900 tabular-nums">${grams.toFixed(1)}</td>
+      `
+      tbody.appendChild(tr)
+    })
+    const totalGrams = (totalPct / 100) * batchSize * 1000
+    if (baseResinEl) baseResinEl.textContent = (batchSize - totalGrams / 1000).toFixed(3)
+  }
+
   const renderSuccess = (r: MatchResponse) => {
     const el = document.getElementById('match-success')
     if (!el) return
@@ -168,26 +195,8 @@ import MatchFailure from '@/dashboard/components/color-matcher/MatchFailure.astr
       r.predicted_coordinates ?? r.target_coordinates
     )
 
-    const tbody = el.querySelector('[data-recipe-body]') as HTMLTableSectionElement
-    const batchSizeInput = document.getElementById('batch-size') as HTMLInputElement | null
-    const batchSize = Number(batchSizeInput?.value ?? 100)
-    tbody.innerHTML = ''
-    const totalPct = (r.recipe ?? []).reduce((s, x) => s + x.percentage, 0)
-    ;(r.recipe ?? []).forEach((row, i) => {
-      const tr = document.createElement('tr')
-      tr.className = (i % 2 === 0 ? 'bg-slate-50/50 ' : 'bg-white ') + 'border-t border-slate-100'
-      const grams = (row.percentage / 100) * batchSize * 1000
-      tr.innerHTML = `
-        <td class="px-4 py-3 font-medium text-slate-800">${row.sku}</td>
-        <td class="px-4 py-3 text-slate-600">${row.product_name}</td>
-        <td class="px-4 py-3 text-slate-600">${row.provider ?? '—'}</td>
-        <td class="px-4 py-3 text-right text-slate-600 tabular-nums">${row.percentage.toFixed(3)}</td>
-        <td class="px-4 py-3 text-right font-bold text-slate-900 tabular-nums">${grams.toFixed(1)}</td>
-      `
-      tbody.appendChild(tr)
-    })
-    const totalResin = 100 - totalPct
-    el.querySelector('[data-total-base-resin]')!.textContent = totalResin.toFixed(3)
+    currentRecipe = r.recipe ?? null
+    updateGrams()
   }
 
   const renderFailure = (r: MatchResponse) => {
@@ -418,6 +427,7 @@ import MatchFailure from '@/dashboard/components/color-matcher/MatchFailure.astr
   root
     .querySelectorAll('[data-action="reset"]')
     .forEach((el) => el.addEventListener('click', () => show('inputs')))
+  document.getElementById('batch-size')?.addEventListener('input', updateGrams)
 
   // Temporary preview hook until backend lands: ?state=success|failure
   const previewState = new URLSearchParams(location.search).get('state')
