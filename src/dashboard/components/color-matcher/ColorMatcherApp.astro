@@ -89,6 +89,7 @@ import MatchFailure from '@/dashboard/components/color-matcher/MatchFailure.astr
     match_history_id?: number | null
     carrier_polymer?: string | null
     pass_threshold?: number
+    total_max_pct?: number
     suggestions?: Suggestion[]
   }
 
@@ -366,6 +367,14 @@ import MatchFailure from '@/dashboard/components/color-matcher/MatchFailure.astr
     const clientId = str('client-id')
     const carrierPolymer = str('carrier-polymer')
     const passThreshold = Number(str('pass-threshold')) || 1.0
+    const totalMaxPct = Number(str('total-max-pct')) || 4.0
+    if (!Number.isFinite(totalMaxPct) || totalMaxPct <= 0 || totalMaxPct > 25) {
+      if (errBox) {
+        errBox.textContent = 'La carga máxima de pigmento debe estar entre 0.1 y 25.'
+        errBox.classList.remove('hidden')
+      }
+      return
+    }
     if (!clientId) {
       if (errBox) {
         errBox.textContent = 'Selecciona un cliente antes de correr la igualación.'
@@ -395,7 +404,8 @@ import MatchFailure from '@/dashboard/components/color-matcher/MatchFailure.astr
           base: { l: base[0], a: base[1], b: base[2] },
           client_id: Number(clientId),
           carrier_polymer: carrierPolymer,
-          pass_threshold: passThreshold
+          pass_threshold: passThreshold,
+          total_max_pct: totalMaxPct
         })
       })
 

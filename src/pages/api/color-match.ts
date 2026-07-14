@@ -12,9 +12,16 @@ interface RequestBody {
   // Named QC tolerance chosen by the operator (1.0 / 1.5 / 2.0 / 4.0).
   // Anything else is rejected — we don't want free-form drift.
   pass_threshold?: number
+  // Max total pigment concentration (%). 4% is the default for final plastic
+  // parts. Monopigmento (concentrate) formulation typically runs 10–20%.
+  // Ceiling of 25% is a hard safety limit — beyond that, dispersion and
+  // mechanical properties collapse in real production.
+  total_max_pct?: number
 }
 
 const ALLOWED_TOLERANCES = new Set([1.0, 1.5, 2.0, 4.0])
+const MIN_TOTAL_MAX_PCT = 0.1
+const MAX_TOTAL_MAX_PCT = 25
 
 // Suggestion caps per section on the failure screen.
 //
@@ -58,6 +65,15 @@ export const POST: APIRoute = async ({ request, cookies, locals }) => {
     return json({ error: 'invalid_pass_threshold' }, 400)
   }
 
+  const totalMaxPct = Number(body.total_max_pct ?? 4.0)
+  if (
+    !Number.isFinite(totalMaxPct) ||
+    totalMaxPct < MIN_TOTAL_MAX_PCT ||
+    totalMaxPct > MAX_TOTAL_MAX_PCT
+  ) {
+    return json({ error: 'invalid_total_max_pct' }, 400)
+  }
+
   const supabase = createSupabaseServerClient(request, cookies)
 
   let query = supabase
@@ -98,7 +114,7 @@ export const POST: APIRoute = async ({ request, cookies, locals }) => {
     )
   }
 
-  const result = runColorMatch({ targetLab, baseLab, inventory, passThreshold })
+  const result = runColorMatch({ targetLab, baseLab, inventory, passThreshold, totalMaxPct })
 
   // On out-of-gamut, surface the closest reference colors to the target
   // so admins know what pigments they'd need to acquire. Each candidate is
@@ -161,7 +177,7 @@ export const POST: APIRoute = async ({ request, cookies, locals }) => {
         // Only try to build a recipe if we actually have inventory to work
         // with. Otherwise every candidate is automatically "not reachable".
         const sub = inventory.length > 0
-          ? runColorMatch({ targetLab: cand.lab, baseLab, inventory, passThreshold })
+          ? runColorMatch({ targetLab: cand.lab, baseLab, inventory, passThreshold, totalMaxPct })
           : null
 
         const reachable = sub?.success === true
@@ -213,10 +229,12 @@ export const POST: APIRoute = async ({ request, cookies, locals }) => {
     target_l: targetLab[0],
     target_a: targetLab[1],
     target_b: targetLab[2],
-    // Persist result + suggestions together so job detail pages can render
-    // the full failure view (colors, chromaticity plot, Adquirir/Alternativos)
-    // without re-running the matcher.
-    calculated_recipe: { ...result, suggestions },
+    // Persist result + suggestions + budget cap together so job detail pages
+    // can render the full failure view (colors, chromaticity plot,
+    // Adquirir/Alternativos) without re-running the matcher. total_max_pct is
+    // stashed inside the JSON blob (not its own column) — bump to a real
+    // column if we ever need to filter/group by it in reports.
+    calculated_recipe: { ...result, suggestions, total_max_pct: totalMaxPct },
     final_delta_e: Number.isFinite(result.final_delta_e) ? result.final_delta_e : null,
     is_success: result.success,
     created_by: user.id,
@@ -251,6 +269,7 @@ export const POST: APIRoute = async ({ request, cookies, locals }) => {
     client_id: body.client_id,
     carrier_polymer: body.carrier_polymer,
     pass_threshold: passThreshold,
+    total_max_pct: totalMaxPct,
     suggestions,
     ...(insertErr
       ? {
