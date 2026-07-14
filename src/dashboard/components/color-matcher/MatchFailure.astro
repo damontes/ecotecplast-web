@@ -65,6 +65,41 @@ import Card from '@/dashboard/components/ui/Card.astro'
       </div>
     </div>
 
+    {/* Closest recipe: the fórmula that produces the closest color even
+        though it didn't meet the ΔE gate. In monopigmento formulation the
+        model often can't match lightness exactly but the pigment RATIO is
+        still directionally correct — surface it prominently so the operator
+        can use it as a starting point and adjust total loading in planta. */}
+    <div class='mt-5' data-closest-recipe-section hidden>
+      <div class='mb-1 flex items-baseline gap-2'>
+        <span class='inline-flex items-center rounded-md bg-slate-200 px-2 py-0.5 text-[10px] font-bold uppercase text-slate-700'>Orientativa</span>
+        <div class='text-sm font-bold text-slate-800'>Fórmula Más Cercana</div>
+      </div>
+      <p class='mb-3 text-xs text-slate-500'>
+        Aunque el color no se alcance exactamente, esta es la mezcla que <b>más se aproxima</b> con el inventario actual. El ratio entre pigmentos suele ser correcto — usa esta receta como punto de partida y ajusta la carga total en planta.
+      </p>
+      <div class='overflow-hidden rounded-lg border border-slate-200 bg-white'>
+        <table class='min-w-full text-sm'>
+          <thead class='bg-slate-50 text-[11px] uppercase tracking-wide text-slate-500'>
+            <tr>
+              <th class='px-4 py-2 text-left font-semibold'>SKU</th>
+              <th class='px-4 py-2 text-left font-semibold'>Producto</th>
+              <th class='px-4 py-2 text-right font-semibold'>% Carga</th>
+              <th class='px-4 py-2 text-right font-semibold'>% del Blend</th>
+            </tr>
+          </thead>
+          <tbody data-closest-recipe-body></tbody>
+          <tfoot class='bg-slate-50/70 text-[11px] tabular-nums text-slate-600'>
+            <tr>
+              <td class='px-4 py-2' colspan='2'>Total pigmento</td>
+              <td class='px-4 py-2 text-right font-bold text-slate-800' data-closest-recipe-total>—</td>
+              <td class='px-4 py-2 text-right'>100%</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+
     <div class='mt-5 grid gap-5 lg:grid-cols-5'>
       <div class='lg:col-span-3'>
         <div class='ch-label'>Plano de Cromaticidad a*/b*</div>

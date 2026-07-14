@@ -114,10 +114,17 @@ import ConfirmDialog from '@/dashboard/components/ui/ConfirmDialog.astro'
         const bcMb = document.querySelector(`[data-breadcrumb-segment="${mbId}"]`)
         if (bcMb) bcMb.textContent = mb.product_name
 
+        const sourceBadge = mb.calibration_source === 'estimated'
+          ? '<span class="ml-2 inline-flex items-center rounded-md bg-amber-100 px-2 py-0.5 text-[10px] font-bold uppercase text-amber-700" title="Los valores 2% y 15% fueron generados por modelo — validar en planta antes de producción">Estimada</span>'
+          : '<span class="ml-2 inline-flex items-center rounded-md bg-emerald-100 px-2 py-0.5 text-[10px] font-bold uppercase text-emerald-700" title="3 chips medidos con espectrofotómetro">Medida</span>'
+
         if (headerEl) {
           headerEl.innerHTML = `
             <div>
-              <h1 class='text-2xl font-bold text-slate-900'>${mb.product_name}</h1>
+              <div class='flex items-center'>
+                <h1 class='text-2xl font-bold text-slate-900'>${mb.product_name}</h1>
+                ${sourceBadge}
+              </div>
               <p class='mt-1 text-sm text-slate-500'>
                 <span class='font-mono text-xs'>${mb.supplier_sku}</span> · ${providerName}
               </p>
@@ -168,8 +175,8 @@ import ConfirmDialog from '@/dashboard/components/ui/ConfirmDialog.astro'
         }>
         const sorted = [...calData].sort((a, b) => a.letdown_percentage - b.letdown_percentage)
         const tagMap: Record<number, { label: string; variant: string }> = {
-          0.5: { label: 'Carga Estándar', variant: 'standard' },
-          2.0: { label: 'Carga de Saturación', variant: 'saturation' }
+          2: { label: 'Estimado desde 8%', variant: 'standard' },
+          15: { label: 'Estimado desde 8%', variant: 'saturation' }
         }
 
         if (calibBody) {

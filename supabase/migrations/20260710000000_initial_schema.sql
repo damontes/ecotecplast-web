@@ -91,6 +91,8 @@ create table if not exists masterbatches (
     base_carrier_polymer  varchar(50)  not null,
     current_stock_kg      numeric(10, 2) not null default 0.0,
     internal_notes        text,
+    calibration_source    varchar(20)  not null default 'measured'
+                          check (calibration_source in ('measured', 'estimated')),
     created_at            timestamptz  not null default now(),
     updated_at            timestamptz  not null default now(),
     constraint masterbatches_org_sku_unique unique (organization_id, supplier_sku)
@@ -158,7 +160,7 @@ create table if not exists match_history (
     client_id             int references clients(id) on delete cascade,
     carrier_polymer_used  varchar(50),
     pass_threshold_used   numeric(4, 2) not null default 1.0
-                          check (pass_threshold_used > 0 and pass_threshold_used <= 3.0),
+                          check (pass_threshold_used > 0),
     base_l                numeric(5, 2),
     base_a                numeric(5, 2),
     base_b                numeric(5, 2),

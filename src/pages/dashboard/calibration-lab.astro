@@ -201,6 +201,7 @@ import Card from '@/dashboard/components/ui/Card.astro'
       color_index_num: string | null
       base_carrier_polymer: string
       current_stock_kg: number
+      calibration_source?: 'measured' | 'estimated' | null
       provider_id: number | null
       providers: { name: string } | { name: string }[] | null
       calibration_data: unknown[]
@@ -229,6 +230,9 @@ import Card from '@/dashboard/components/ui/Card.astro'
         const badge = calPoints === 3
           ? '<span class="inline-flex items-center rounded-md bg-emerald-100 px-2 py-0.5 text-[10px] font-bold uppercase text-emerald-700">3 / 3</span>'
           : `<span class="inline-flex items-center rounded-md bg-amber-100 px-2 py-0.5 text-[10px] font-bold uppercase text-amber-700">${calPoints} / 3</span>`
+        const sourceBadge = mb.calibration_source === 'estimated'
+          ? '<span class="ml-1 inline-flex items-center rounded-md bg-amber-50 px-1.5 py-0.5 text-[9px] font-semibold uppercase text-amber-700 ring-1 ring-inset ring-amber-200" title="2% y 15% estimados desde 8%">Est.</span>'
+          : ''
 
         const detailUrl = `/dashboard/calibration-lab/${mb.id}`
         tr.innerHTML = `
@@ -240,7 +244,7 @@ import Card from '@/dashboard/components/ui/Card.astro'
           <td class="text-xs uppercase text-slate-600">${mb.base_carrier_polymer}</td>
           <td class="text-xs text-slate-600">${mb.color_index_num ?? '—'}</td>
           <td class="text-right text-xs tabular-nums text-slate-700">${Number(mb.current_stock_kg ?? 0).toFixed(1)}</td>
-          <td class="text-right">${badge}</td>
+          <td class="text-right">${badge}${sourceBadge}</td>
         `
         tr.addEventListener('click', (e) => {
           if ((e.target as HTMLElement).closest('a')) return

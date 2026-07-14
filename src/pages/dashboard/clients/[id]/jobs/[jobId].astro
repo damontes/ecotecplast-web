@@ -66,6 +66,7 @@ import Card from '@/dashboard/components/ui/Card.astro'
     predicted_coordinates?: [number, number, number]
     closest_achievable_coordinates?: [number, number, number]
     recipe?: RecipeItem[]
+    closest_recipe?: RecipeItem[]
     message?: string
     suggestions?: Suggestion[]
   }
@@ -289,9 +290,60 @@ import Card from '@/dashboard/components/ui/Card.astro'
         } else {
           // Failure view — surface the persisted suggestions in the same
           // two-section shape used by the live matcher (Adquirir / Alternativos).
+          // Also surface the closest recipe the optimizer found even though
+          // ΔE was out of tolerance — critical for monopigmento formulation
+          // where the hue ratio is often correct but lightness (L*) can't be
+          // matched with a single-tau model.
+          const closestRecipe: RecipeItem[] = j.calculated_recipe?.closest_recipe ?? []
           const rawSuggestions: Suggestion[] = j.calculated_recipe?.suggestions ?? []
           const adquirir = rawSuggestions.filter((s) => !s.reachable_now)
           const alternativos = rawSuggestions.filter((s) => s.reachable_now)
+
+          const closestRecipeSection = closestRecipe.length > 0 ? (() => {
+            const total = closestRecipe.reduce((s, r) => s + r.percentage, 0)
+            const rowsHtml = closestRecipe.map((r, i) => {
+              const share = total > 0 ? (r.percentage / total) * 100 : 0
+              return `
+                <tr class="${i % 2 === 0 ? 'bg-slate-50/50' : 'bg-white'} border-t border-slate-100">
+                  <td class="px-4 py-3 font-medium text-slate-800">${r.sku}</td>
+                  <td class="px-4 py-3 text-slate-600">${r.product_name}</td>
+                  <td class="px-4 py-3 text-right tabular-nums text-slate-700">${r.percentage.toFixed(3)}</td>
+                  <td class="px-4 py-3 text-right font-bold tabular-nums text-slate-900">${share.toFixed(1)}%</td>
+                </tr>
+              `
+            }).join('')
+            return `
+              <div class="mt-6">
+                <div class="mb-1 flex items-baseline gap-2">
+                  <span class="inline-flex items-center rounded-md bg-slate-200 px-2 py-0.5 text-[10px] font-bold uppercase text-slate-700">Orientativa</span>
+                  <div class="text-sm font-bold text-slate-800">Fórmula Más Cercana</div>
+                </div>
+                <p class="mb-3 text-xs text-slate-500">
+                  Aunque el color no se alcanzó dentro de la tolerancia, esta es la mezcla más aproximada con el inventario. El ratio entre pigmentos suele ser directamente utilizable — ajusta la carga total en planta.
+                </p>
+                <div class="overflow-hidden rounded-lg border border-slate-200 bg-white">
+                  <table class="min-w-full text-sm">
+                    <thead class="bg-slate-50 text-[11px] uppercase tracking-wide text-slate-500">
+                      <tr>
+                        <th class="px-4 py-2 text-left font-semibold">SKU</th>
+                        <th class="px-4 py-2 text-left font-semibold">Producto</th>
+                        <th class="px-4 py-2 text-right font-semibold">% Carga</th>
+                        <th class="px-4 py-2 text-right font-semibold">% del Blend</th>
+                      </tr>
+                    </thead>
+                    <tbody>${rowsHtml}</tbody>
+                    <tfoot class="bg-slate-50/70 text-[11px] tabular-nums text-slate-600">
+                      <tr>
+                        <td class="px-4 py-2" colspan="2">Total pigmento</td>
+                        <td class="px-4 py-2 text-right font-bold text-slate-800">${total.toFixed(3)}%</td>
+                        <td class="px-4 py-2 text-right">100%</td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+              </div>
+            `
+          })() : ''
 
           const renderAdquirir = (s: Suggestion): string => {
             const sw = labToRgbCss(s.lab)
@@ -367,7 +419,8 @@ import Card from '@/dashboard/components/ui/Card.astro'
           ` : ''
 
           bodyEl.innerHTML = `
-            <div class='rounded-lg border border-slate-200 bg-white p-5 text-sm text-slate-600'>
+            ${closestRecipeSection}
+            <div class='mt-6 rounded-lg border border-slate-200 bg-white p-5 text-sm text-slate-600'>
               <div class='text-xs font-semibold uppercase tracking-widest text-slate-400'>Cómo cerrar la brecha</div>
               <p class='mt-2'>
                 Agrega masterbatches en el

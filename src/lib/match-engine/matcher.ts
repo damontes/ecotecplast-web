@@ -38,6 +38,18 @@ export interface MatchFailure {
   final_delta_e: number
   target_coordinates: Lab
   closest_achievable_coordinates: Lab
+  // Closest recipe the optimizer found, even though it doesn't meet the
+  // ΔE gate. Useful in monopigmento formulation where the model can hit
+  // the target hue (a*/b*) but not the lightness (L*), so ΔE fails the
+  // tolerance check but the ratio is still directionally correct and
+  // worth surfacing to the operator.
+  closest_recipe: Array<{
+    masterbatch_id: number
+    sku: string
+    product_name: string
+    provider?: string
+    percentage: number
+  }>
 }
 
 export type MatchResult = MatchSuccess | MatchFailure
@@ -107,7 +119,8 @@ export function runColorMatch({
       // up any client that reads final_delta_e.toFixed(...).
       final_delta_e: 999.99,
       target_coordinates: targetLab,
-      closest_achievable_coordinates: baseLab
+      closest_achievable_coordinates: baseLab,
+      closest_recipe: []
     }
   }
 
@@ -140,7 +153,8 @@ export function runColorMatch({
       // up any client that reads final_delta_e.toFixed(...).
       final_delta_e: 999.99,
       target_coordinates: targetLab,
-      closest_achievable_coordinates: baseLab
+      closest_achievable_coordinates: baseLab,
+      closest_recipe: []
     }
   }
 
@@ -190,20 +204,9 @@ export function runColorMatch({
   const optimizedLab = predict(finalConcentrations)
   const finalDeltaE = deltaE2000(targetLab, optimizedLab)
 
-  if (finalDeltaE > passThreshold) {
-    return {
-      success: false,
-      message: 'Target color falls outside current inventory gamut boundaries.',
-      final_delta_e: round2(finalDeltaE),
-      target_coordinates: targetLab,
-      closest_achievable_coordinates: [
-        round2(optimizedLab[0]),
-        round2(optimizedLab[1]),
-        round2(optimizedLab[2])
-      ]
-    }
-  }
-
+  // Build the recipe regardless of pass/fail — used as `recipe` on success
+  // and as `closest_recipe` on out-of-gamut. Rows below 0.01% are dropped
+  // as noise (same threshold as the reference Python script).
   const recipe: MatchSuccess['recipe'] = []
   for (let i = 0; i < usable.length; i++) {
     const pct = finalConcentrations[i]
@@ -215,6 +218,21 @@ export function runColorMatch({
         provider: usable[i].mb.provider,
         percentage: round3(pct)
       })
+    }
+  }
+
+  if (finalDeltaE > passThreshold) {
+    return {
+      success: false,
+      message: 'Target color falls outside current inventory gamut boundaries.',
+      final_delta_e: round2(finalDeltaE),
+      target_coordinates: targetLab,
+      closest_achievable_coordinates: [
+        round2(optimizedLab[0]),
+        round2(optimizedLab[1]),
+        round2(optimizedLab[2])
+      ],
+      closest_recipe: recipe
     }
   }
 

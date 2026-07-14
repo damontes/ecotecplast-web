@@ -81,10 +81,15 @@ import CalibrationData from '@/dashboard/components/calibration-lab/CalibrationD
         base_carrier_polymer: str('base-carrier'),
         current_stock_kg: Number(str('stock-level')) || 0,
         internal_notes: str('internal-notes').trim() || null,
+        // Calibration curve — MB is characterized by chips at 2 / 8 / 15%
+        // pigment loading. The 8% is the measured anchor; 2% and 15% are
+        // auto-estimated via exponential model (with default τ=4) but the
+        // operator can override any of the three fields.
+        calibration_source: 'estimated' as 'estimated' | 'measured',
         calibration: [
-          { letdown_percentage: 0.5, lab_l: num('calib-05-l'), lab_a: num('calib-05-a'), lab_b: num('calib-05-b') },
-          { letdown_percentage: 1.0, lab_l: num('calib-10-l'), lab_a: num('calib-10-a'), lab_b: num('calib-10-b') },
-          { letdown_percentage: 2.0, lab_l: num('calib-20-l'), lab_a: num('calib-20-a'), lab_b: num('calib-20-b') }
+          { letdown_percentage: 2.0,  lab_l: num('calib-02-l'), lab_a: num('calib-02-a'), lab_b: num('calib-02-b') },
+          { letdown_percentage: 8.0,  lab_l: num('calib-08-l'), lab_a: num('calib-08-a'), lab_b: num('calib-08-b') },
+          { letdown_percentage: 15.0, lab_l: num('calib-15-l'), lab_a: num('calib-15-a'), lab_b: num('calib-15-b') }
         ]
       }
 
@@ -119,6 +124,52 @@ import CalibrationData from '@/dashboard/components/calibration-lab/CalibrationD
         window.location.href = '/dashboard/calibration-lab'
       }, 600)
     }
+
+    // Estimate 2% and 15% from the operator's 8% chip measurement.
+    // Uses the exponential saturation model with default τ = 4 (medium-
+    // strength pigment). Base assumed (100, 0, 0) — white matrix.
+    //
+    //   Lab(c) = Base + (Masstone - Base) × (1 − e^(−c/τ))
+    //
+    // From the 8% measurement we solve backwards for the masstone-equivalent
+    // shift, then scale down to 2% and up to 15% via the same τ. Any of
+    // the 9 fields stays editable — the operator can override our estimate.
+    const TAU_DEFAULT = 4.0
+    const S = (c: number) => 1 - Math.exp(-c / TAU_DEFAULT)
+    const S8 = S(8)
+    const ratio2 = S(2) / S8    // ≈ 0.454
+    const ratio15 = S(15) / S8  // ≈ 1.129
+    const BASE_L = 100
+    const BASE_A = 0
+    const BASE_B = 0
+
+    const estimateCurve = () => {
+      const l8 = num('calib-08-l')
+      const a8 = num('calib-08-a')
+      const b8 = num('calib-08-b')
+      if ([l8, a8, b8].some((n) => !Number.isFinite(n))) {
+        showErr('Ingresa el Lab del chip al 8% antes de estimar los otros puntos.')
+        return
+      }
+      const setVal = (id: string, v: number) => {
+        const el = document.getElementById(id) as HTMLInputElement | null
+        if (el) el.value = v.toFixed(2)
+      }
+      setVal('calib-02-l', BASE_L + (l8 - BASE_L) * ratio2)
+      setVal('calib-02-a', BASE_A + (a8 - BASE_A) * ratio2)
+      setVal('calib-02-b', BASE_B + (b8 - BASE_B) * ratio2)
+      setVal('calib-15-l', BASE_L + (l8 - BASE_L) * ratio15)
+      setVal('calib-15-a', BASE_A + (a8 - BASE_A) * ratio15)
+      setVal('calib-15-b', BASE_B + (b8 - BASE_B) * ratio15)
+      showOk('Puntos 2% y 15% estimados. Puedes ajustarlos manualmente antes de guardar.')
+    }
+
+    document.querySelectorAll('[data-estimate-curve]').forEach((el) => {
+      el.addEventListener('click', (event) => {
+        event.preventDefault()
+        estimateCurve()
+      })
+    })
 
     form?.addEventListener('submit', (event) => {
       event.preventDefault()

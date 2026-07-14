@@ -16,11 +16,17 @@
 -- this file — it only runs when explicitly executed (SQL editor,
 -- `supabase db reset` on Docker, or `psql`).
 --
--- Calibration curves below are hand-designed so that:
---   * Base resin (95, 0, 0) + 1.0% Blue + 0.5% Red → predicts EXACTLY Lab
---     (75, 12, -18). Use that as your PASS target (ΔE ≈ 0).
---   * Deep saturated orange (30, 55, 60) cannot be reached even at 2%+2%
---     mix — use that as your FAIL target (ΔE > 1.0, out-of-gamut).
+-- Calibration curves below are back-calibrated from the real production
+-- recipe of ETP-VEMP-32D (3.6% PV7 + 11.4% PA14 → measured chip Lab
+-- (51.9, -37.3, 29.4)). τ_verde = 3.1, τ_amarillo = 36 fit that anchor.
+-- Values computed at 2/8/15% pigment loading in matrix cera+CaCO3, base
+-- assumed (100, 0, 0). Marked as 'estimated' because they come from a
+-- model, not from measured chips at each concentration.
+--
+-- Target for validation: (51.9, -37.3, 29.4). Matcher should return
+-- closest_recipe with ratio ~24% verde / 76% amarillo (mirroring the
+-- known-good recipe). ΔE final around 15-20 — L residual is a known
+-- limitation of the single-tau exponential model.
 
 -- Ensure the default "Ecotecplast" org exists. Normally created lazily
 -- by handle_new_user() on the first signup — but if you're seeding
@@ -41,70 +47,54 @@ select setval('organizations_id_seq', greatest((select max(id) from organization
 set session_replication_role = replica;
 
 insert into providers (organization_id, name) values
+  (1, 'Sincol'),
   (1, 'Clariant'),
   (1, 'BASF'),
   (1, 'Ampacet'),
-  (1, 'PolyOne'),
   (1, 'Other')
 on conflict (organization_id, name) do nothing;
 
--- Clean out prior seed masterbatches so re-runs after a curve tweak stay
--- consistent. Cascades to their calibration_data rows.
-delete from masterbatches where supplier_sku in ('MB-Blue-402', 'MB-Red-215', 'MB-Yellow-901') and organization_id = 1;
+-- Clean out prior seed masterbatches so re-runs stay consistent.
+-- Cascades to their calibration_data rows.
+delete from masterbatches where supplier_sku in ('PV7-SINCOL', 'PA14-SINCOL') and organization_id = 1;
 
--- --- Phthalo Blue (Clariant) ---
--- 0.5% → (87, -2, -10)     shift (-8,  -2, -10)
--- 1.0% → (80, -3, -18)     shift (-15, -3, -18)  ← PASS-recipe anchor
--- 2.0% → (65, -6, -32)     shift (-30, -6, -32)
-insert into masterbatches (organization_id, provider_id, product_name, supplier_sku, color_index_num, base_carrier_polymer, current_stock_kg, internal_notes)
-select 1, id, 'Ultra Blue Prime', 'MB-Blue-402', 'P.B. 15:3', 'pe', 120.0, 'Seed: phthalo blue baseline'
-from providers where name = 'Clariant' and organization_id = 1;
-
-insert into calibration_data (masterbatch_id, letdown_percentage, lab_l, lab_a, lab_b)
-select m.id, x.pct, x.l, x.a, x.b
-from masterbatches m
-cross join (values
-  (0.5::numeric, 87.0::numeric, -2.0::numeric, -10.0::numeric),
-  (1.0::numeric, 80.0::numeric, -3.0::numeric, -18.0::numeric),
-  (2.0::numeric, 65.0::numeric, -6.0::numeric, -32.0::numeric)
-) as x(pct, l, a, b)
-where m.supplier_sku = 'MB-Blue-402' and m.organization_id = 1;
-
--- --- Signal Red (BASF) ---
--- 0.5% → (90, 15, 0)       shift (-5,  15, 0)   ← PASS-recipe anchor
--- 1.0% → (85, 28, 2)       shift (-10, 28, 2)
--- 2.0% → (75, 48, 5)       shift (-20, 48, 5)
-insert into masterbatches (organization_id, provider_id, product_name, supplier_sku, color_index_num, base_carrier_polymer, current_stock_kg, internal_notes)
-select 1, id, 'Signal Red Prime', 'MB-Red-215', 'P.R. 254', 'pe', 85.0, 'Seed: DPP red baseline'
-from providers where name = 'BASF' and organization_id = 1;
+-- --- Pigmento Verde 7 (Sincol) — phthalocyanine green ---
+-- Back-calibrated with τ = 3.1, base (100, 0, 0):
+-- 2%  → (81.74, -33.21,  4.92)
+-- 8%  → (64.51, -64.55,  9.55)
+-- 15% → (61.86, -69.36, 10.27)
+insert into masterbatches (organization_id, provider_id, product_name, supplier_sku, color_index_num, base_carrier_polymer, current_stock_kg, internal_notes, calibration_source)
+select 1, id, 'Pigmento Verde 7', 'PV7-SINCOL', 'P.V. 7', 'wax', 10.0, 'Seed: back-calibrated from ETP-VEMP-32D recipe (τ=3.1)', 'estimated'
+from providers where name = 'Sincol' and organization_id = 1;
 
 insert into calibration_data (masterbatch_id, letdown_percentage, lab_l, lab_a, lab_b)
 select m.id, x.pct, x.l, x.a, x.b
 from masterbatches m
 cross join (values
-  (0.5::numeric, 90.0::numeric, 15.0::numeric, 0.0::numeric),
-  (1.0::numeric, 85.0::numeric, 28.0::numeric, 2.0::numeric),
-  (2.0::numeric, 75.0::numeric, 48.0::numeric, 5.0::numeric)
+  (2.0::numeric,  81.74::numeric, -33.21::numeric,  4.92::numeric),
+  (8.0::numeric,  64.51::numeric, -64.55::numeric,  9.55::numeric),
+  (15.0::numeric, 61.86::numeric, -69.36::numeric, 10.27::numeric)
 ) as x(pct, l, a, b)
-where m.supplier_sku = 'MB-Red-215' and m.organization_id = 1;
+where m.supplier_sku = 'PV7-SINCOL' and m.organization_id = 1;
 
--- --- Solar Yellow (Ampacet) ---
--- 0.5% → (92, -1, 15)      shift (-3, -1, 15)
--- 1.0% → (89, -2, 28)      shift (-6, -2, 28)
--- 2.0% → (84, -3, 45)      shift (-11, -3, 45)
-insert into masterbatches (organization_id, provider_id, product_name, supplier_sku, color_index_num, base_carrier_polymer, current_stock_kg, internal_notes)
-select 1, id, 'Solar Yellow Prime', 'MB-Yellow-901', 'P.Y. 180', 'pe', 60.0, 'Seed: benzimidazolone yellow baseline'
-from providers where name = 'Ampacet' and organization_id = 1;
+-- --- Pigmento Amarillo 14 (Sincol) — diarylide yellow ---
+-- Back-calibrated with τ = 36, base (100, 0, 0):
+-- 2%  → (99.12,  0.36,  5.15)
+-- 8%  → (96.78,  1.32, 18.92)
+-- 15% → (94.48,  2.25, 32.44)
+insert into masterbatches (organization_id, provider_id, product_name, supplier_sku, color_index_num, base_carrier_polymer, current_stock_kg, internal_notes, calibration_source)
+select 1, id, 'Pigmento Amarillo 14', 'PA14-SINCOL', 'P.Y. 14', 'wax', 10.0, 'Seed: back-calibrated from ETP-VEMP-32D recipe (τ=36)', 'estimated'
+from providers where name = 'Sincol' and organization_id = 1;
 
 insert into calibration_data (masterbatch_id, letdown_percentage, lab_l, lab_a, lab_b)
 select m.id, x.pct, x.l, x.a, x.b
 from masterbatches m
 cross join (values
-  (0.5::numeric, 92.0::numeric, -1.0::numeric, 15.0::numeric),
-  (1.0::numeric, 89.0::numeric, -2.0::numeric, 28.0::numeric),
-  (2.0::numeric, 84.0::numeric, -3.0::numeric, 45.0::numeric)
+  (2.0::numeric,  99.12::numeric, 0.36::numeric,  5.15::numeric),
+  (8.0::numeric,  96.78::numeric, 1.32::numeric, 18.92::numeric),
+  (15.0::numeric, 94.48::numeric, 2.25::numeric, 32.44::numeric)
 ) as x(pct, l, a, b)
-where m.supplier_sku = 'MB-Yellow-901' and m.organization_id = 1;
+where m.supplier_sku = 'PA14-SINCOL' and m.organization_id = 1;
 
 -- --- Clients (starter set) ---
 insert into clients (organization_id, name, contact_email, default_carrier_polymer, notes) values
@@ -114,48 +104,65 @@ insert into clients (organization_id, name, contact_email, default_carrier_polym
   (1, 'Muestra / Sample',         null, 'pe', 'Internal QC and sample runs')
 on conflict (organization_id, name) do nothing;
 
--- --- Color reference library ---
--- Split into two groups so the palette-suggestions feature has both
--- reachable and out-of-gamut entries against the seed inventory:
---   * INT-* Reachable: hand-designed to sit inside the reachable gamut
---     of the 3 seed MBs at ≤4% total. Palette suggestions should recover
---     these when a target is out of gamut but nearby.
---   * INT-* Aspirational: deep saturations / neutrals / very dark colors
---     that require pigments we don't have. These simulate "colors on your
---     wall book you can't currently make" and will be skipped by the
---     suggester because no recipe exists.
+-- --- Color reference library — RAL Classic ---
+-- Curated subset of the RAL Classic industrial standard. RAL is the
+-- de-facto color reference for European plastics manufacturing, openly
+-- published, and recognized by name/code across the supply chain.
+--
+-- ACCURACY NOTE: Lab values are approximations for D65/10° observer on
+-- one standardized substrate + gloss level. Suitable as a matching hint,
+-- not as a QC-authoritative source. For QC-critical work, measure the
+-- actual RAL chip on your spectrophotometer and update via /dashboard/references.
 
 insert into color_references (palette, code, name, lab_l, lab_a, lab_b) values
-  -- Reachable with Blue + Red + Yellow at ≤4% total on Lab (95,0,0) base:
-  ('Internal', 'INT-BLU-004',     'Powder Blue',      87.0,  -2.0, -10.0),
-  ('Internal', 'INT-BLU-005',     'Cadet Blue',       80.0,  -3.0, -18.0),
-  ('Internal', 'INT-BLU-006',     'Deep Blue',        65.0,  -6.0, -32.0),
-  ('Internal', 'INT-RED-003',     'Coral',            90.0,  15.0,   0.0),
-  ('Internal', 'INT-RED-004',     'Poppy Red',        85.0,  28.0,   2.0),
-  ('Internal', 'INT-RED-005',     'Deep Poppy',       75.0,  48.0,   5.0),
-  ('Internal', 'INT-YEL-003',     'Light Cream',      92.0,  -1.0,  15.0),
-  ('Internal', 'INT-YEL-004',     'Butter Yellow',    89.0,  -2.0,  28.0),
-  ('Internal', 'INT-YEL-005',     'Solar Yellow',     84.0,  -3.0,  45.0),
-  ('Internal', 'INT-VIO-002',     'Berry Purple',     70.0,  25.0, -16.0),
-  ('Internal', 'INT-PNK-002',     'Rose Blush',       76.0,  26.0,  -6.0),
-  ('Internal', 'INT-GRN-003',     'Sage Green',       84.0,  -3.0,   5.0),
-  ('Internal', 'INT-ORG-002',     'Peach',            84.0,  13.0,  28.0),
-  ('Internal', 'INT-ORG-003',     'Terracotta',       82.0,  27.0,  17.0),
+  -- Yellows / Oranges
+  ('RAL', 'RAL 1003', 'Signal Yellow',         76.0,  13.0,  79.0),
+  ('RAL', 'RAL 1015', 'Light Ivory',           87.0,   3.0,  17.0),
+  ('RAL', 'RAL 1018', 'Zinc Yellow',           82.0,   6.0,  76.0),
+  ('RAL', 'RAL 1023', 'Traffic Yellow',        77.0,  12.0,  85.0),
+  ('RAL', 'RAL 2000', 'Yellow Orange',         64.0,  41.0,  71.0),
+  ('RAL', 'RAL 2004', 'Pure Orange',           54.0,  58.0,  61.0),
+  ('RAL', 'RAL 2011', 'Deep Orange',           54.0,  55.0,  59.0),
 
-  -- Aspirational (out-of-gamut with the seed inventory — used to test the
-  -- "no reachable references" branch):
-  ('Internal', 'INT-RED-001',     'Signal Red',       48.0,  55.0,  32.0),
-  ('Internal', 'INT-ORG-001',     'Pure Orange',      60.0,  45.0,  60.0),
-  ('Internal', 'INT-YEL-001',     'Sulfur Yellow',    82.0,  -5.0,  85.0),
-  ('Internal', 'INT-GRN-001',     'Grass Green',      52.0, -32.0,  30.0),
-  ('Internal', 'INT-GRN-002',     'Mint Green',       78.0, -30.0,   5.0),
-  ('Internal', 'INT-BLU-002',     'Signal Blue',      35.0,   0.0, -38.0),
-  ('Internal', 'INT-BLU-003',     'Ultramarine',      28.0,  15.0, -50.0),
-  ('Internal', 'INT-VIO-001',     'Deep Violet',      40.0,  35.0, -30.0),
-  ('Internal', 'INT-BRN-001',     'Chocolate Brown',  32.0,  18.0,  20.0),
-  ('Internal', 'INT-GRY-002',     'Iron Grey',        45.0,  -2.0,   1.0),
-  ('Internal', 'INT-BLK-001',     'Jet Black',        16.0,   0.0,   0.0),
-  ('Internal', 'INT-WHT-001',     'Titanium White',   95.0,   0.0,   2.0)
+  -- Reds
+  ('RAL', 'RAL 3000', 'Flame Red',             39.0,  53.0,  32.0),
+  ('RAL', 'RAL 3001', 'Signal Red',            37.0,  55.0,  32.0),
+  ('RAL', 'RAL 3020', 'Traffic Red',           43.0,  60.0,  44.0),
+
+  -- Violets
+  ('RAL', 'RAL 4005', 'Blue Lilac',            44.0,  15.0, -24.0),
+  ('RAL', 'RAL 4006', 'Traffic Purple',        39.0,  44.0,  -3.0),
+
+  -- Blues
+  ('RAL', 'RAL 5002', 'Ultramarine Blue',      25.0,  13.0, -48.0),
+  ('RAL', 'RAL 5005', 'Signal Blue',           27.0,   1.0, -38.0),
+  ('RAL', 'RAL 5010', 'Gentian Blue',          27.0,  -8.0, -32.0),
+  ('RAL', 'RAL 5012', 'Light Blue',            53.0, -15.0, -30.0),
+  ('RAL', 'RAL 5015', 'Sky Blue',              47.0, -15.0, -38.0),
+  ('RAL', 'RAL 5017', 'Traffic Blue',          32.0,  -8.0, -42.0),
+
+  -- Greens
+  ('RAL', 'RAL 6000', 'Patina Green',          48.0, -22.0,   8.0),
+  ('RAL', 'RAL 6002', 'Leaf Green',            44.0, -24.0,  25.0),
+  ('RAL', 'RAL 6018', 'Yellow Green',          59.0, -32.0,  41.0),
+  ('RAL', 'RAL 6029', 'Mint Green',            42.0, -42.0,  23.0),
+
+  -- Greys
+  ('RAL', 'RAL 7016', 'Anthracite Grey',       32.0,  -2.0,  -4.0),
+  ('RAL', 'RAL 7035', 'Light Grey',            79.0,  -1.0,   1.0),
+  ('RAL', 'RAL 7047', 'Telegrey 4',            76.0,  -1.0,   1.0),
+
+  -- Browns
+  ('RAL', 'RAL 8017', 'Chocolate Brown',       29.0,  15.0,   8.0),
+
+  -- Whites / Blacks
+  ('RAL', 'RAL 9001', 'Cream',                 91.0,   1.0,   8.0),
+  ('RAL', 'RAL 9003', 'Signal White',          95.0,  -1.0,   1.0),
+  ('RAL', 'RAL 9004', 'Signal Black',          25.0,   0.0,   0.0),
+  ('RAL', 'RAL 9005', 'Jet Black',             14.0,   0.0,   0.0),
+  ('RAL', 'RAL 9010', 'Pure White',            94.0,  -1.0,   1.0),
+  ('RAL', 'RAL 9016', 'Traffic White',         95.0,  -1.0,   1.0),
+  ('RAL', 'RAL 9017', 'Traffic Black',         15.0,   0.0,   0.0)
 on conflict (palette, code) do nothing;
 
 -- Restore trigger firing for future sessions.

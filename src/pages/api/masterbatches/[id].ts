@@ -16,6 +16,7 @@ interface UpdateBody {
   base_carrier_polymer?: string
   current_stock_kg?: number
   internal_notes?: string | null
+  calibration_source?: 'measured' | 'estimated'
   calibration?: CalibrationPointInput[]
 }
 
@@ -35,6 +36,7 @@ export const GET: APIRoute = async ({ params, request, cookies }) => {
         base_carrier_polymer,
         current_stock_kg,
         internal_notes,
+        calibration_source,
         provider_id,
         providers ( name ),
         calibration_data ( id, letdown_percentage, lab_l, lab_a, lab_b )
@@ -70,6 +72,7 @@ export const PUT: APIRoute = async ({ params, request, cookies, locals }) => {
   if (body.base_carrier_polymer !== undefined) mbUpdates.base_carrier_polymer = body.base_carrier_polymer
   if (body.current_stock_kg !== undefined) mbUpdates.current_stock_kg = body.current_stock_kg
   if (body.internal_notes !== undefined) mbUpdates.internal_notes = body.internal_notes?.trim() || null
+  if (body.calibration_source !== undefined) mbUpdates.calibration_source = body.calibration_source
 
   if (Object.keys(mbUpdates).length > 0) {
     if (mbUpdates.product_name !== undefined && !String(mbUpdates.product_name)) {

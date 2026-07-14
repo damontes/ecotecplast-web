@@ -83,6 +83,7 @@ import MatchFailure from '@/dashboard/components/color-matcher/MatchFailure.astr
     target_coordinates: [number, number, number]
     predicted_coordinates?: [number, number, number]
     closest_achievable_coordinates?: [number, number, number]
+    closest_recipe?: RecipeItem[]
     recipe?: RecipeItem[]
     message?: string
     job_identifier?: string | null
@@ -224,6 +225,37 @@ import MatchFailure from '@/dashboard/components/color-matcher/MatchFailure.astr
     ;(el.querySelector('[data-closest-l]') as HTMLElement).textContent = closest[0].toFixed(1)
     ;(el.querySelector('[data-closest-a]') as HTMLElement).textContent = closest[1].toFixed(1)
     ;(el.querySelector('[data-closest-b]') as HTMLElement).textContent = closest[2].toFixed(1)
+
+    // Closest recipe — visible only when the optimizer returned one (i.e.,
+    // the failure came from ΔE gate, not from empty inventory). Shows both
+    // absolute % (carga en el chip/monopigmento) and ratio-within-blend so
+    // the operator can validate the proportions independent of total load.
+    const closestRecipe = r.closest_recipe ?? []
+    const recipeSection = el.querySelector('[data-closest-recipe-section]') as HTMLElement | null
+    const recipeBody = el.querySelector('[data-closest-recipe-body]') as HTMLTableSectionElement | null
+    const recipeTotal = el.querySelector('[data-closest-recipe-total]') as HTMLElement | null
+    if (recipeSection && recipeBody && recipeTotal) {
+      if (closestRecipe.length === 0) {
+        recipeSection.hidden = true
+      } else {
+        recipeSection.hidden = false
+        const total = closestRecipe.reduce((s, row) => s + row.percentage, 0)
+        recipeBody.innerHTML = closestRecipe
+          .map((row, i) => {
+            const share = total > 0 ? (row.percentage / total) * 100 : 0
+            return `
+              <tr class='${i % 2 === 0 ? 'bg-slate-50/50' : 'bg-white'} border-t border-slate-100'>
+                <td class='px-4 py-3 font-medium text-slate-800'>${row.sku}</td>
+                <td class='px-4 py-3 text-slate-600'>${row.product_name}</td>
+                <td class='px-4 py-3 text-right tabular-nums text-slate-700'>${row.percentage.toFixed(3)}</td>
+                <td class='px-4 py-3 text-right font-bold tabular-nums text-slate-900'>${share.toFixed(1)}%</td>
+              </tr>
+            `
+          })
+          .join('')
+        recipeTotal.textContent = `${total.toFixed(3)}%`
+      }
+    }
 
     // a*/b* mini-plot: SVG viewbox is 320×320, plot area 20..300 (280 px).
     // Map ±64 units (covers most industrial pigment gamut) → 280 px.
