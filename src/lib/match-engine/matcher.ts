@@ -131,7 +131,11 @@ export function runColorMatch({
     [number, number, number]
   ]
 
-  const usable: Array<{ mb: MasterbatchInput; curves: Curves }> = []
+  const usable: Array<{
+    mb: MasterbatchInput
+    curves: Curves
+    minConc: number  // lowest calibrated concentration for safePredict
+  }> = []
   for (const mb of inventory) {
     if (mb.calibration.length < MIN_CALIB_POINTS) continue
     const concs = mb.calibration.map((c) => c.letdownPercentage)
@@ -140,7 +144,8 @@ export function runColorMatch({
     const dB = mb.calibration.map((c) => c.lab[2] - baseLab[2])
     usable.push({
       mb,
-      curves: [polyfit2(concs, dL), polyfit2(concs, dA), polyfit2(concs, dB)]
+      curves: [polyfit2(concs, dL), polyfit2(concs, dA), polyfit2(concs, dB)],
+      minConc: Math.min(...concs)
     })
   }
 
@@ -158,15 +163,30 @@ export function runColorMatch({
     }
   }
 
+  // Physically-correct evaluation. Below the lowest calibrated concentration,
+  // linearly interpolate to (0, 0) — otherwise the polyfit's non-zero
+  // constant term lets the optimizer exploit phantom sub-threshold pigment
+  // contributions (huge fake ΔE gains from concentrations that produce
+  // essentially no color change in reality). Within/above the calibrated
+  // range, use polyfit unchanged so no precision is lost where we have data.
+  const safeShift = (curve: [number, number, number], c: number, minConc: number): number => {
+    if (c <= 0) return 0
+    if (c < minConc) {
+      const shiftAtMin = polyval2(curve, minConc)
+      return (c / minConc) * shiftAtMin
+    }
+    return polyval2(curve, c)
+  }
+
   const predict = (concentrations: number[]): Lab => {
     let dL = 0, dA = 0, dB = 0
     for (let i = 0; i < usable.length; i++) {
       const c = concentrations[i]
       if (c <= 0) continue
-      const [fL, fA, fB] = usable[i].curves
-      dL += polyval2(fL, c)
-      dA += polyval2(fA, c)
-      dB += polyval2(fB, c)
+      const { curves, minConc } = usable[i]
+      dL += safeShift(curves[0], c, minConc)
+      dA += safeShift(curves[1], c, minConc)
+      dB += safeShift(curves[2], c, minConc)
     }
     return [baseLab[0] + dL, baseLab[1] + dA, baseLab[2] + dB]
   }
@@ -197,20 +217,36 @@ export function runColorMatch({
     maxIter: 800,
     tol: 1e-8,
     seed,
-    extraRandomRestarts: Math.max(6, n)
+    // Scale restarts with dimensionality — 5+ pigments needs many more
+    // starting points to reliably find the global optimum. Cheap: each
+    // restart is a fresh Nelder-Mead, which converges in ~50-100 iter.
+    extraRandomRestarts: Math.max(20, n * 4)
   })
 
   const finalConcentrations = result.x
-  const optimizedLab = predict(finalConcentrations)
+
+  // Zero out contributions below the recipe threshold BEFORE computing the
+  // predicted Lab and ΔE. Otherwise the polyfit's non-zero constant term
+  // (the polynomial doesn't pass through origin when extrapolated below
+  // the calibration range) lets phantom sub-threshold pigments contribute
+  // huge fake Lab shifts. Symptom: matcher reports ΔE 0.5 with a recipe
+  // that in planta produces ΔE 15+. Discovered when adding a 4th/5th
+  // strong pigment (e.g. carbon black) to a working inventory.
+  const RECIPE_THRESHOLD = 0.01
+  const cleanConcentrations = finalConcentrations.map((c) =>
+    c > RECIPE_THRESHOLD ? c : 0
+  )
+  const optimizedLab = predict(cleanConcentrations)
   const finalDeltaE = deltaE2000(targetLab, optimizedLab)
 
   // Build the recipe regardless of pass/fail — used as `recipe` on success
-  // and as `closest_recipe` on out-of-gamut. Rows below 0.01% are dropped
-  // as noise (same threshold as the reference Python script).
+  // and as `closest_recipe` on out-of-gamut. Uses the same threshold and
+  // the same cleaned concentrations that fed the ΔE gate above, so what
+  // you see is what will be scored.
   const recipe: MatchSuccess['recipe'] = []
   for (let i = 0; i < usable.length; i++) {
-    const pct = finalConcentrations[i]
-    if (pct > 0.01) {
+    const pct = cleanConcentrations[i]
+    if (pct > 0) {
       recipe.push({
         masterbatch_id: usable[i].mb.id,
         sku: usable[i].mb.sku,

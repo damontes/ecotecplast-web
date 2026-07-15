@@ -1,6 +1,5 @@
 ---
 import DashboardLayout from '@/dashboard/layouts/DashboardLayout.astro'
-import Card from '@/dashboard/components/ui/Card.astro'
 ---
 
 {/* Auto-derived breadcrumbs: Clientes › {client name} › Trabajos › {job identifier}.
@@ -39,6 +38,120 @@ import Card from '@/dashboard/components/ui/Card.astro'
 
   {/* Result body — replaced after fetch */}
   <div id='result-body'></div>
+
+  {/* ─── Drawer: Ajustar mezcla ────────────────────────────────────
+      Slides in from the right when the user clicks "Ajustar mezcla".
+      Contains a live simulator pre-populated with the job's target
+      Lab and its recipe (either the winning recipe if success, or the
+      closest_recipe if out of gamut). The operator can tweak %s or
+      add/remove pigments without leaving the job page.               */}
+  <div id='adjust-backdrop' class='fixed inset-0 z-40 hidden bg-black/30'></div>
+  <div id='adjust-drawer'
+       class='fixed inset-y-0 right-0 z-50 hidden w-full max-w-lg translate-x-full bg-white shadow-xl transition-transform duration-200 ease-out'>
+    <div class='flex h-full flex-col'>
+      <div class='flex items-center justify-between border-b border-slate-200 p-4'>
+        <div>
+          <div class='text-[10px] font-semibold uppercase tracking-widest text-slate-400'>Simulador contextual</div>
+          <div class='text-lg font-bold text-slate-900'>Ajustar mezcla</div>
+        </div>
+        <button type='button' id='adjust-close' class='rounded-md p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700'>
+          <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' class='h-5 w-5'>
+            <line x1='18' y1='6' x2='6' y2='18'></line>
+            <line x1='6' y1='6' x2='18' y2='18'></line>
+          </svg>
+        </button>
+      </div>
+
+      <div class='flex-1 overflow-y-auto p-4 space-y-4'>
+        {/* Target (read-only) */}
+        <div class='rounded-lg border border-slate-200 bg-slate-50 p-3'>
+          <div class='ch-label mb-2'>Objetivo del trabajo</div>
+          <div class='flex items-center gap-3'>
+            <div id='adj-target-swatch' class='h-14 w-20 flex-shrink-0 rounded-md ring-1 ring-slate-200 bg-white'></div>
+            <div class='flex-1 grid grid-cols-3 gap-1 text-[11px] tabular-nums text-slate-600'>
+              <div>L* <b class='block text-slate-900' id='adj-target-l'>—</b></div>
+              <div>a* <b class='block text-slate-900' id='adj-target-a'>—</b></div>
+              <div>b* <b class='block text-slate-900' id='adj-target-b'>—</b></div>
+            </div>
+          </div>
+        </div>
+
+        {/* Predicted */}
+        <div class='rounded-lg border border-slate-200 bg-white p-3'>
+          <div class='mb-2 flex items-center justify-between'>
+            <div class='ch-label'>Chip predicho</div>
+            <div class='inline-flex items-baseline gap-1 rounded-md bg-slate-100 px-2 py-1 text-[10px] font-semibold uppercase tracking-widest text-slate-500'>
+              ΔE <span class='text-slate-900' id='adj-delta-e'>—</span>
+            </div>
+          </div>
+          <div id='adj-swatch' class='h-32 w-full rounded-md ring-1 ring-slate-200' style='background: rgb(255,255,255)'></div>
+          <div class='mt-2 flex justify-around rounded-md bg-slate-50 px-2 py-1.5 text-[11px] tabular-nums text-slate-600'>
+            <span>L* <b class='text-slate-900' id='adj-lab-l'>—</b></span>
+            <span>a* <b class='text-slate-900' id='adj-lab-a'>—</b></span>
+            <span>b* <b class='text-slate-900' id='adj-lab-b'>—</b></span>
+          </div>
+          <p class='mt-1.5 text-center text-[10px] italic text-slate-400'>
+            Predicción de referencia — el color se estima al 15% de carga total.
+          </p>
+        </div>
+
+        {/* Total pigment loading in the chip — combined with the blend ratios
+            below to compute the absolute % of each pigment for the color
+            prediction. Pre-populated from the job's recipe sum, but the
+            operator can override to test "same blend at different load". */}
+        <div class='rounded-lg border border-slate-200 bg-white p-3'>
+          <div class='mb-2 flex items-baseline justify-between'>
+            <label for='adj-total-load' class='ch-label'>Carga total del chip</label>
+            <span class='text-[10px] italic text-slate-400'>afecta la intensidad</span>
+          </div>
+          <div class='flex items-center gap-2'>
+            <div class='w-32 flex-shrink-0'>
+              <input id='adj-total-load' type='number' min='0' step='0.005' value='15.000'
+                class='ch-input text-right tabular-nums' />
+            </div>
+            <span class='text-xs text-slate-500'>% del chip</span>
+          </div>
+        </div>
+
+        {/* Mix rows — ratios that sum to 100% */}
+        <div>
+          <div class='mb-2 flex items-baseline justify-between'>
+            <div class='ch-label'>Mezcla (ratio del blend)</div>
+            <span class='text-[11px] tabular-nums text-slate-500'>
+              Suma <b class='text-slate-800' id='adj-total'>0.000%</b>
+            </span>
+          </div>
+          <div id='adj-rows' class='space-y-2'>
+            <div class='rounded-md border border-dashed border-slate-200 bg-slate-50 py-4 text-center text-xs text-slate-400'>
+              Cargando…
+            </div>
+          </div>
+          <div class='mt-3 flex items-center gap-2'>
+            <div class='relative flex-1'>
+              <button type='button' id='adj-add-btn'
+                class='inline-flex w-full items-center justify-center gap-1.5 rounded-md bg-slate-900 px-3 py-2 text-xs font-semibold text-white hover:bg-slate-800'>
+                <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round' class='h-3.5 w-3.5'>
+                  <path d='M12 5v14'></path>
+                  <path d='M5 12h14'></path>
+                </svg>
+                Agregar pigmento
+              </button>
+              <div id='adj-add-menu' class='absolute left-0 top-full z-10 mt-1 hidden max-h-64 w-full overflow-y-auto rounded-md border border-slate-200 bg-white shadow-lg'></div>
+            </div>
+            <button type='button' id='adj-normalize'
+              class='rounded-md border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50'
+              title='Ajustar los valores para que sumen 100%'>
+              Normalizar
+            </button>
+            <button type='button' id='adj-reset'
+              class='rounded-md border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50'>
+              Reiniciar
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 </DashboardLayout>
 
 <script>
@@ -169,14 +282,33 @@ import Card from '@/dashboard/components/ui/Card.astro'
         const dtStr = dt.toLocaleString('es-MX', { dateStyle: 'medium', timeStyle: 'short' })
 
         headerEl.innerHTML = `
-          <div class='text-[10px] font-semibold uppercase tracking-widest text-slate-400'>
-            Ecotecplast ColorHub
+          <div class='flex flex-wrap items-start justify-between gap-3'>
+            <div>
+              <div class='text-[10px] font-semibold uppercase tracking-widest text-slate-400'>
+                Ecotecplast ColorHub
+              </div>
+              <h1 class='text-2xl font-bold text-slate-900'>
+                Trabajo <span class='font-mono'>${j.job_identifier ?? j.id}</span>
+              </h1>
+              <p class='mt-1 text-sm text-slate-500'>${dtStr} · Cliente: ${cName}</p>
+            </div>
+            <button type='button' id='open-adjust'
+              class='inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50'>
+              <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' class='h-4 w-4'>
+                <path d='M20 7h-9'></path>
+                <path d='M14 17H5'></path>
+                <circle cx='17' cy='17' r='3'></circle>
+                <circle cx='7' cy='7' r='3'></circle>
+              </svg>
+              Ajustar mezcla
+            </button>
           </div>
-          <h1 class='text-2xl font-bold text-slate-900'>
-            Trabajo <span class='font-mono'>${j.job_identifier ?? j.id}</span>
-          </h1>
-          <p class='mt-1 text-sm text-slate-500'>${dtStr} · Cliente: ${cName}</p>
         `
+
+        // Wire the "Ajustar mezcla" button to open the drawer with the
+        // job's target and initial recipe pre-populated.
+        const openBtn = document.getElementById('open-adjust') as HTMLButtonElement | null
+        openBtn?.addEventListener('click', () => openAdjustDrawer(j))
 
         // Status band
         if (success) {
@@ -252,12 +384,14 @@ import Card from '@/dashboard/components/ui/Card.astro'
           const rowsHtml = recipe
             .map((r, i) => {
               const grams = (r.percentage / 100) * 100 * 1000
+              const blendShare = total > 0 ? (r.percentage / total) * 100 : 0
               return `<tr class='${i % 2 === 0 ? 'bg-slate-50/50 ' : 'bg-white '}border-t border-slate-100'>
                 <td class='px-4 py-3 font-medium text-slate-800'>${r.sku}</td>
                 <td class='px-4 py-3 text-slate-600'>${r.product_name}</td>
                 <td class='px-4 py-3 text-slate-600'>${r.provider ?? '—'}</td>
                 <td class='px-4 py-3 text-right tabular-nums text-slate-600'>${r.percentage.toFixed(3)}</td>
-                <td class='px-4 py-3 text-right font-bold tabular-nums text-slate-900'>${grams.toFixed(1)}</td>
+                <td class='px-4 py-3 text-right font-bold tabular-nums text-slate-900'>${blendShare.toFixed(1)}%</td>
+                <td class='px-4 py-3 text-right tabular-nums text-slate-600'>${grams.toFixed(1)}</td>
               </tr>`
             })
             .join('')
@@ -279,6 +413,7 @@ import Card from '@/dashboard/components/ui/Card.astro'
                       <th class='px-4 py-3'>Producto</th>
                       <th class='px-4 py-3'>Proveedor</th>
                       <th class='px-4 py-3 text-right'>% Carga</th>
+                      <th class='px-4 py-3 text-right'>% del Blend</th>
                       <th class='px-4 py-3 text-right'>Peso (g)</th>
                     </tr>
                   </thead>
@@ -437,5 +572,383 @@ import Card from '@/dashboard/components/ui/Card.astro'
       .catch(() => {
         window.location.href = `/dashboard/clients/${clientId}`
       })
+
+    // ─── Adjust-mix drawer ────────────────────────────────────────
+    const drawer = document.getElementById('adjust-drawer') as HTMLDivElement | null
+    const backdrop = document.getElementById('adjust-backdrop') as HTMLDivElement | null
+    const closeBtn = document.getElementById('adjust-close') as HTMLButtonElement | null
+    const adjTargetL = document.getElementById('adj-target-l') as HTMLElement | null
+    const adjTargetA = document.getElementById('adj-target-a') as HTMLElement | null
+    const adjTargetB = document.getElementById('adj-target-b') as HTMLElement | null
+    const adjTargetSwatch = document.getElementById('adj-target-swatch') as HTMLDivElement | null
+    const adjSwatch = document.getElementById('adj-swatch') as HTMLDivElement | null
+    const adjLabL = document.getElementById('adj-lab-l') as HTMLElement | null
+    const adjLabA = document.getElementById('adj-lab-a') as HTMLElement | null
+    const adjLabB = document.getElementById('adj-lab-b') as HTMLElement | null
+    const adjDeltaE = document.getElementById('adj-delta-e') as HTMLElement | null
+    const adjTotal = document.getElementById('adj-total') as HTMLElement | null
+    const adjRows = document.getElementById('adj-rows') as HTMLDivElement | null
+    const adjAddBtn = document.getElementById('adj-add-btn') as HTMLButtonElement | null
+    const adjAddMenu = document.getElementById('adj-add-menu') as HTMLDivElement | null
+    const adjResetBtn = document.getElementById('adj-reset') as HTMLButtonElement | null
+    const adjNormalizeBtn = document.getElementById('adj-normalize') as HTMLButtonElement | null
+    const adjTotalLoad = document.getElementById('adj-total-load') as HTMLInputElement | null
+
+    const getTotalLoad = () => {
+      const v = Number(adjTotalLoad?.value)
+      return Number.isFinite(v) && v > 0 ? v : 0
+    }
+
+    interface AdjCalPoint { letdown_percentage: number; lab_l: number; lab_a: number; lab_b: number }
+    interface AdjInventoryMB {
+      id: number
+      product_name: string
+      supplier_sku: string
+      base_carrier_polymer: string
+      calibration_data: AdjCalPoint[]
+    }
+    type AdjLab = [number, number, number]
+    type AdjCurves = [
+      [number, number, number],
+      [number, number, number],
+      [number, number, number]
+    ]
+
+    let adjBase: AdjLab = [100, 0, 0]
+    let adjInventory: AdjInventoryMB[] = []
+    let adjInventoryLoaded = false
+    const adjCurves = new Map<number, AdjCurves>()
+    const adjSelected = new Map<number, number>()  // id → percentage
+    let adjTarget: AdjLab = [0, 0, 0]
+
+    // Naive but sufficient polyfit for 3 points. Duplicated tiny helpers
+    // instead of importing so the drawer stays self-contained.
+    const adjPolyfit3 = (xs: number[], ys: number[]): [number, number, number] => {
+      const [x0, x1, x2] = xs
+      const [y0, y1, y2] = ys
+      const d = (x0 - x1) * (x0 - x2) * (x1 - x2)
+      const a = (x2 * (y1 - y0) + x1 * (y0 - y2) + x0 * (y2 - y1)) / d
+      const b = (x2 * x2 * (y0 - y1) + x1 * x1 * (y2 - y0) + x0 * x0 * (y1 - y2)) / d
+      const c = (x1 * x2 * (x1 - x2) * y0 + x2 * x0 * (x2 - x0) * y1 + x0 * x1 * (x0 - x1) * y2) / d
+      return [a, b, c]
+    }
+    const adjPolyval = (co: [number, number, number], x: number) => co[0] * x * x + co[1] * x + co[2]
+
+    // Same physics contract as the backend `safeShift` in matcher.ts —
+    // below the lowest calibrated concentration we linearly interpolate
+    // from (0, 0) to (minConc, polyval(minConc)) instead of blindly
+    // extrapolating the polynomial (which has a non-zero constant term
+    // and would report huge fake shifts for sub-threshold pigments).
+    const adjSafeShift = (co: [number, number, number], x: number, minConc: number): number => {
+      if (x <= 0) return 0
+      if (x < minConc) {
+        const shiftAtMin = adjPolyval(co, minConc)
+        return (x / minConc) * shiftAtMin
+      }
+      return adjPolyval(co, x)
+    }
+    const adjMinConc = new Map<number, number>()
+
+    const adjRebuildCurves = () => {
+      adjCurves.clear()
+      adjMinConc.clear()
+      for (const mb of adjInventory) {
+        if ((mb.calibration_data ?? []).length < 3) continue
+        const concs = mb.calibration_data.map((c) => Number(c.letdown_percentage))
+        const dL = mb.calibration_data.map((c) => Number(c.lab_l) - adjBase[0])
+        const dA = mb.calibration_data.map((c) => Number(c.lab_a) - adjBase[1])
+        const dB = mb.calibration_data.map((c) => Number(c.lab_b) - adjBase[2])
+        try {
+          adjCurves.set(mb.id, [adjPolyfit3(concs, dL), adjPolyfit3(concs, dA), adjPolyfit3(concs, dB)])
+          adjMinConc.set(mb.id, Math.min(...concs))
+        } catch { /* skip degenerate */ }
+      }
+    }
+
+    const adjPreviewColor = (mb: AdjInventoryMB): string => {
+      const c = adjCurves.get(mb.id)
+      if (!c || mb.calibration_data.length === 0) return 'rgb(200,200,200)'
+      const midIdx = Math.floor(mb.calibration_data.length / 2)
+      const midConc = Number(mb.calibration_data[midIdx].letdown_percentage)
+      return labToRgbCss([
+        adjBase[0] + adjPolyval(c[0], midConc),
+        adjBase[1] + adjPolyval(c[1], midConc),
+        adjBase[2] + adjPolyval(c[2], midConc)
+      ])
+    }
+
+    // Compute ΔE2000 inline (same formula the app uses everywhere).
+    const adjDeltaE2000 = (a: AdjLab, b: AdjLab): number => {
+      const [L1, a1, b1] = a
+      const [L2, a2, b2] = b
+      const avgL = (L1 + L2) / 2
+      const C1 = Math.sqrt(a1 * a1 + b1 * b1)
+      const C2 = Math.sqrt(a2 * a2 + b2 * b2)
+      const avgC = (C1 + C2) / 2
+      const G = 0.5 * (1 - Math.sqrt(avgC ** 7 / (avgC ** 7 + 25 ** 7)))
+      const a1p = a1 * (1 + G)
+      const a2p = a2 * (1 + G)
+      const C1p = Math.sqrt(a1p * a1p + b1 * b1)
+      const C2p = Math.sqrt(a2p * a2p + b2 * b2)
+      const avgCp = (C1p + C2p) / 2
+      const toDeg = (r: number) => (r * 180) / Math.PI
+      const toRad = (d: number) => (d * Math.PI) / 180
+      const h1p = (() => { const h = toDeg(Math.atan2(b1, a1p)); return h >= 0 ? h : h + 360 })()
+      const h2p = (() => { const h = toDeg(Math.atan2(b2, a2p)); return h >= 0 ? h : h + 360 })()
+      let dhp = h2p - h1p
+      if (Math.abs(dhp) > 180) dhp += h2p <= h1p ? 360 : -360
+      let avgHp = (h1p + h2p) / 2
+      if (Math.abs(h1p - h2p) > 180) avgHp += 180
+      if (avgHp >= 360) avgHp -= 360
+      const T = 1 - 0.17 * Math.cos(toRad(avgHp - 30)) + 0.24 * Math.cos(toRad(2 * avgHp))
+                + 0.32 * Math.cos(toRad(3 * avgHp + 6)) - 0.20 * Math.cos(toRad(4 * avgHp - 63))
+      const dLp = L2 - L1
+      const dCp = C2p - C1p
+      const dHp = 2 * Math.sqrt(C1p * C2p) * Math.sin(toRad(dhp / 2))
+      const SL = 1 + (0.015 * (avgL - 50) ** 2) / Math.sqrt(20 + (avgL - 50) ** 2)
+      const SC = 1 + 0.045 * avgCp
+      const SH = 1 + 0.015 * avgCp * T
+      const RT = -2 * Math.sqrt(avgCp ** 7 / (avgCp ** 7 + 25 ** 7))
+                 * Math.sin(toRad(60 * Math.exp(-(((avgHp - 275) / 25) ** 2))))
+      return Math.sqrt(
+        (dLp / SL) ** 2 + (dCp / SC) ** 2 + (dHp / SH) ** 2 + RT * (dCp / SC) * (dHp / SH)
+      )
+    }
+
+    const adjRecompute = () => {
+      // Values in adjSelected are blend ratios (sum to 100). Convert to
+      // absolute % of the chip: abs_i = (blend_i / totalBlend) × totalLoad.
+      let totalBlend = 0
+      for (const v of adjSelected.values()) totalBlend += v
+      const totalLoad = getTotalLoad()
+
+      let dL = 0, dA = 0, dB = 0
+      for (const [id, pct] of adjSelected) {
+        if (!Number.isFinite(pct) || pct <= 0) continue
+        if (totalBlend <= 0 || totalLoad <= 0) continue
+        const absPct = (pct / totalBlend) * totalLoad
+        const c = adjCurves.get(id)
+        if (!c) continue
+        const mn = adjMinConc.get(id) ?? 0
+        dL += adjSafeShift(c[0], absPct, mn)
+        dA += adjSafeShift(c[1], absPct, mn)
+        dB += adjSafeShift(c[2], absPct, mn)
+      }
+      const predicted: AdjLab = [adjBase[0] + dL, adjBase[1] + dA, adjBase[2] + dB]
+      if (adjSwatch) adjSwatch.style.background = labToRgbCss(predicted)
+      if (adjLabL) adjLabL.textContent = predicted[0].toFixed(2)
+      if (adjLabA) adjLabA.textContent = predicted[1].toFixed(2)
+      if (adjLabB) adjLabB.textContent = predicted[2].toFixed(2)
+      if (adjTotal) adjTotal.textContent = `${totalBlend.toFixed(3)}%`
+      if (adjDeltaE) adjDeltaE.textContent = adjDeltaE2000(adjTarget, predicted).toFixed(2)
+    }
+
+    const adjRenderRows = () => {
+      if (!adjRows) return
+      if (adjSelected.size === 0) {
+        adjRows.innerHTML = `
+          <div class='rounded-md border border-dashed border-slate-200 bg-slate-50 py-4 text-center text-xs text-slate-400'>
+            No hay pigmentos en la mezcla. Presioná "Agregar pigmento".
+          </div>
+        `
+        return
+      }
+      // Blend-only view: values sum to 100% (ratio of the pigment blend).
+      // Absolute concentration is intentionally hidden; the operator sets
+      // the total load in production based on formula constraints, not here.
+      adjRows.innerHTML = Array.from(adjSelected.entries())
+        .map(([id, pct]) => {
+          const mb = adjInventory.find((m) => m.id === id)
+          if (!mb) return ''
+          const swatch = adjPreviewColor(mb)
+          return `
+            <div class='flex items-center gap-2 rounded-md border border-slate-200 bg-white p-2'>
+              <span class='inline-block h-4 w-4 flex-shrink-0 rounded-full ring-1 ring-black/10' style='background: ${swatch}'></span>
+              <div class='min-w-0 flex-1'>
+                <div class='truncate text-xs font-semibold text-slate-800'>${mb.product_name}</div>
+                <div class='truncate text-[10px] font-mono text-slate-400'>${mb.supplier_sku}</div>
+              </div>
+              <div class='w-24 flex-shrink-0'>
+                <input type='number' min='0' step='0.005'
+                  data-adj-pct='${id}' value='${pct.toFixed(3)}'
+                  class='ch-input text-right tabular-nums' />
+              </div>
+              <span class='w-4 text-[11px] text-slate-500'>%</span>
+              <button type='button' data-adj-remove='${id}'
+                class='flex-shrink-0 rounded p-1 text-slate-400 hover:bg-rose-50 hover:text-rose-600'>
+                <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' class='h-3.5 w-3.5'>
+                  <line x1='18' y1='6' x2='6' y2='18'></line>
+                  <line x1='6' y1='6' x2='18' y2='18'></line>
+                </svg>
+              </button>
+            </div>
+          `
+        })
+        .join('')
+
+      adjRows.querySelectorAll('[data-adj-pct]').forEach((el) => {
+        el.addEventListener('input', () => {
+          const id = Number((el as HTMLElement).getAttribute('data-adj-pct'))
+          const pct = Number((el as HTMLInputElement).value)
+          adjSelected.set(id, Number.isFinite(pct) ? pct : 0)
+          adjRecompute()
+        })
+      })
+      adjRows.querySelectorAll('[data-adj-remove]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const id = Number((btn as HTMLElement).getAttribute('data-adj-remove'))
+          adjSelected.delete(id)
+          adjRenderRows()
+          adjRenderAddMenu()
+          adjRecompute()
+        })
+      })
+    }
+
+    const adjRenderAddMenu = () => {
+      if (!adjAddMenu) return
+      const available = adjInventory.filter((mb) => !adjSelected.has(mb.id))
+      if (available.length === 0) {
+        adjAddMenu.innerHTML = '<div class="p-2 text-xs text-slate-400">Sin pigmentos disponibles.</div>'
+        return
+      }
+      adjAddMenu.innerHTML = available
+        .map((mb) => {
+          const swatch = adjPreviewColor(mb)
+          return `
+            <button type='button' data-adj-add='${mb.id}'
+              class='flex w-full items-center gap-2 px-3 py-2 text-left text-xs hover:bg-slate-50'>
+              <span class='inline-block h-3 w-3 flex-shrink-0 rounded-full ring-1 ring-black/10' style='background: ${swatch}'></span>
+              <div class='min-w-0 flex-1'>
+                <div class='truncate font-semibold text-slate-800'>${mb.product_name}</div>
+                <div class='text-[10px] font-mono text-slate-400'>${mb.supplier_sku}</div>
+              </div>
+            </button>
+          `
+        })
+        .join('')
+      adjAddMenu.querySelectorAll('[data-adj-add]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const id = Number((btn as HTMLElement).getAttribute('data-adj-add'))
+          adjSelected.set(id, 0)
+          adjAddMenu.classList.add('hidden')
+          adjRenderRows()
+          adjRenderAddMenu()
+          adjRecompute()
+        })
+      })
+    }
+
+    const closeAdjustDrawer = () => {
+      if (!drawer || !backdrop) return
+      drawer.classList.add('translate-x-full')
+      setTimeout(() => {
+        drawer.classList.add('hidden')
+        backdrop.classList.add('hidden')
+      }, 200)
+    }
+
+    // Exposed above via `openBtn.addEventListener(..., () => openAdjustDrawer(j))`.
+    // Pre-populates target Lab + initial recipe from the job (winning recipe
+    // on success, closest_recipe on out-of-gamut). Fetches inventory once
+    // per session.
+    ;(window as unknown as { openAdjustDrawer?: (job: Job) => void }).openAdjustDrawer = undefined
+    const openAdjustDrawer = async (j: Job) => {
+      if (!drawer || !backdrop) return
+
+      // Pre-populate target from the job.
+      adjTarget = [j.target_l ?? 0, j.target_a ?? 0, j.target_b ?? 0]
+      if (adjTargetL) adjTargetL.textContent = adjTarget[0].toFixed(2)
+      if (adjTargetA) adjTargetA.textContent = adjTarget[1].toFixed(2)
+      if (adjTargetB) adjTargetB.textContent = adjTarget[2].toFixed(2)
+      if (adjTargetSwatch) adjTargetSwatch.style.background = labToRgbCss(adjTarget)
+
+      // Use the job's actual base Lab for the curves and prediction so the
+      // drawer's color matches what the match engine computed. Hardcoding
+      // [100, 0, 0] gave wrong shifts and a misleading predicted color.
+      adjBase = [j.base_l ?? 100, j.base_a ?? 0, j.base_b ?? 0]
+      // Rebuild curves whenever base changes (curves store shifts relative
+      // to adjBase). The inventory fetch is cached per session, so curve
+      // rebuild only happens on first open or when base differs.
+      adjRebuildCurves()
+
+      // Pre-populate the initial mix — from the winning recipe if success,
+      // or from closest_recipe if the job was out of gamut. The recipe has
+      // absolute % (of the chip). We convert to (totalLoad + blend ratios).
+      adjSelected.clear()
+      const initialRecipe: RecipeItem[] =
+        (j.calculated_recipe?.recipe as RecipeItem[] | undefined) ??
+        (j.calculated_recipe?.closest_recipe as RecipeItem[] | undefined) ??
+        []
+      const totalAbs = initialRecipe.reduce((s, r) => s + r.percentage, 0)
+      if (adjTotalLoad) adjTotalLoad.value = totalAbs > 0 ? totalAbs.toFixed(3) : '15.000'
+      for (const row of initialRecipe) {
+        const blend = totalAbs > 0 ? (row.percentage / totalAbs) * 100 : 0
+        adjSelected.set(row.masterbatch_id, blend)
+      }
+
+      // Fetch inventory once (cached on subsequent opens).
+      // Filter by the job's carrier polymer so the drawer only shows MBs
+      // that were eligible for the original match (PE, PP, etc.).
+      if (!adjInventoryLoaded) {
+        try {
+          const r = await fetch('/api/masterbatches')
+          const data = await r.json()
+          adjInventory = ((data.masterbatches ?? []) as AdjInventoryMB[])
+            .filter((mb) => !j.carrier_polymer_used || mb.base_carrier_polymer === j.carrier_polymer_used)
+          adjInventoryLoaded = true
+          adjRebuildCurves()
+        } catch {
+          if (adjRows) adjRows.innerHTML =
+            '<div class="rounded-md border border-rose-200 bg-rose-50 p-2 text-xs text-rose-700">Error al cargar el inventario.</div>'
+          return
+        }
+      }
+
+      adjRenderRows()
+      adjRenderAddMenu()
+      adjRecompute()
+
+      // Slide in.
+      drawer.classList.remove('hidden')
+      backdrop.classList.remove('hidden')
+      requestAnimationFrame(() => drawer.classList.remove('translate-x-full'))
+    }
+
+    closeBtn?.addEventListener('click', closeAdjustDrawer)
+    backdrop?.addEventListener('click', closeAdjustDrawer)
+    adjResetBtn?.addEventListener('click', () => {
+      adjSelected.clear()
+      adjRenderRows()
+      adjRenderAddMenu()
+      adjRecompute()
+    })
+    adjNormalizeBtn?.addEventListener('click', () => {
+      const total = Array.from(adjSelected.values()).reduce((s, v) => s + v, 0)
+      if (total <= 0) return
+      for (const [id, v] of adjSelected) {
+        adjSelected.set(id, (v / total) * 100)
+      }
+      adjRenderRows()
+      adjRecompute()
+    })
+    adjTotalLoad?.addEventListener('input', () => {
+      adjRenderRows()  // refresh the "= X% del chip" annotations
+      adjRecompute()
+    })
+    adjAddBtn?.addEventListener('click', (e) => {
+      e.stopPropagation()
+      adjAddMenu?.classList.toggle('hidden')
+    })
+    document.addEventListener('click', (e) => {
+      if (adjAddMenu && !adjAddMenu.contains(e.target as Node) && e.target !== adjAddBtn) {
+        adjAddMenu.classList.add('hidden')
+      }
+    })
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && drawer && !drawer.classList.contains('hidden')) {
+        closeAdjustDrawer()
+      }
+    })
   })
 </script>

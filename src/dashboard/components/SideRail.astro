@@ -1,6 +1,6 @@
 ---
 interface Props {
-  active: 'color-matcher' | 'calibration-lab' | 'clients' | 'references'
+  active: 'color-matcher' | 'simulator' | 'calibration-lab' | 'clients' | 'references'
 }
 
 const { active } = Astro.props
@@ -8,6 +8,7 @@ const user = Astro.locals.user
 
 const links = [
   { id: 'color-matcher', label: 'Igualador de Color', href: '/dashboard/color-matcher' },
+  { id: 'simulator', label: 'Simulador de Mezcla', href: '/dashboard/simulator' },
   { id: 'calibration-lab', label: 'Laboratorio de Calibración', href: '/dashboard/calibration-lab' },
   { id: 'references', label: 'Colores de Referencia', href: '/dashboard/references' },
   { id: 'clients', label: 'Clientes', href: '/dashboard/clients' }

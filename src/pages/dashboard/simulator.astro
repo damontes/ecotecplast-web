@@ -1,0 +1,475 @@
+---
+import DashboardLayout from '@/dashboard/layouts/DashboardLayout.astro'
+import Card from '@/dashboard/components/ui/Card.astro'
+---
+
+<DashboardLayout title='Simulador de Mezcla' active='simulator'>
+  <div class='mb-6'>
+    <h1 class='text-2xl font-bold text-slate-900'>Simulador de Mezcla</h1>
+    <p class='mt-1 text-sm text-slate-500'>
+      Agregá pigmentos del inventario, definí el <b>ratio del blend</b> (suma 100%) y la <b>carga total</b> del chip, y observá el color resultante en tiempo real.
+    </p>
+  </div>
+
+  {/* Target input row */}
+  <Card title='Color objetivo (opcional)' eyebrow='Referencia'>
+    <div class='grid gap-4 sm:grid-cols-4'>
+      <div>
+        <label for='sim-target-l' class='ch-label'>L*</label>
+        <input id='sim-target-l' type='number' step='0.01' placeholder='—' class='ch-input text-center' />
+      </div>
+      <div>
+        <label for='sim-target-a' class='ch-label'>a*</label>
+        <input id='sim-target-a' type='number' step='0.01' placeholder='—' class='ch-input text-center' />
+      </div>
+      <div>
+        <label for='sim-target-b' class='ch-label'>b*</label>
+        <input id='sim-target-b' type='number' step='0.01' placeholder='—' class='ch-input text-center' />
+      </div>
+      <div class='flex flex-col justify-end'>
+        <label class='ch-label'>Chip target</label>
+        <div id='sim-target-swatch' class='h-10 w-full rounded-md ring-1 ring-slate-200 bg-slate-100'></div>
+      </div>
+    </div>
+  </Card>
+
+  <div class='mt-6 grid gap-6 lg:grid-cols-5'>
+    {/* Left column: base + total + pigment rows */}
+    <div class='lg:col-span-3'>
+      <Card title='Pigmentos en la mezcla' eyebrow='Mezcla' right='Valores en % del blend (suman 100)'>
+        {/* Base + carga total inputs */}
+        <div class='mb-4 grid gap-4 sm:grid-cols-4'>
+          <div class='sm:col-span-1'>
+            <label for='sim-base-l' class='ch-label'>Base L*</label>
+            <input id='sim-base-l' type='number' step='0.01' value='100' class='ch-input text-center' />
+          </div>
+          <div class='sm:col-span-1'>
+            <label for='sim-base-a' class='ch-label'>Base a*</label>
+            <input id='sim-base-a' type='number' step='0.01' value='0' class='ch-input text-center' />
+          </div>
+          <div class='sm:col-span-1'>
+            <label for='sim-base-b' class='ch-label'>Base b*</label>
+            <input id='sim-base-b' type='number' step='0.01' value='0' class='ch-input text-center' />
+          </div>
+          <div class='sm:col-span-1'>
+            <label for='sim-total-load' class='ch-label'>Carga total (%)</label>
+            <input id='sim-total-load' type='number' step='0.005' value='15.000' class='ch-input text-center' />
+          </div>
+        </div>
+
+        <div id='sim-added' class='space-y-3'>
+          <div class='rounded-lg border border-dashed border-slate-200 bg-slate-50 py-8 text-center text-xs text-slate-400'>
+            Ningún pigmento agregado todavía. Presioná "Agregar pigmento" abajo.
+          </div>
+        </div>
+
+        <div class='mt-4 flex flex-wrap items-center gap-2'>
+          <div class='relative'>
+            <button
+              type='button'
+              id='sim-add-btn'
+              class='inline-flex items-center gap-1.5 rounded-md bg-slate-900 px-3 py-2 text-xs font-semibold text-white hover:bg-slate-800'
+            >
+              <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round' class='h-3.5 w-3.5'>
+                <path d='M12 5v14'></path>
+                <path d='M5 12h14'></path>
+              </svg>
+              Agregar pigmento
+            </button>
+            <div id='sim-add-menu' class='absolute left-0 top-full z-10 mt-1 hidden max-h-64 w-64 overflow-y-auto rounded-md border border-slate-200 bg-white shadow-lg'></div>
+          </div>
+          <button
+            type='button'
+            id='sim-normalize'
+            class='rounded-md border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50'
+            title='Escala los valores para que sumen 100%'
+          >
+            Normalizar
+          </button>
+          <button
+            type='button'
+            id='sim-clear-all'
+            class='rounded-md border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50'
+          >
+            Limpiar todo
+          </button>
+        </div>
+
+        <div class='mt-4 flex items-center justify-between rounded-md bg-slate-50 px-3 py-2 text-xs'>
+          <span class='font-semibold uppercase tracking-widest text-slate-500'>Suma del blend</span>
+          <span class='text-lg font-bold tabular-nums text-slate-800' id='sim-total'>0.000%</span>
+        </div>
+      </Card>
+    </div>
+
+    {/* Right column: predicted chip */}
+    <div class='lg:col-span-2'>
+      <Card title='Chip predicho' eyebrow='Resultado'>
+        <div
+          id='sim-swatch'
+          class='h-64 w-full rounded-lg ring-1 ring-slate-200'
+          style='background: rgb(255,255,255)'
+        ></div>
+        <div class='mt-3 flex justify-around rounded-md bg-white px-2 py-2 text-[12px] tabular-nums text-slate-600 ring-1 ring-slate-200'>
+          <span>L* <b class='text-slate-900' id='sim-lab-l'>100.00</b></span>
+          <span>a* <b class='text-slate-900' id='sim-lab-a'>0.00</b></span>
+          <span>b* <b class='text-slate-900' id='sim-lab-b'>0.00</b></span>
+        </div>
+        <div id='sim-delta-block' class='mt-3 hidden items-baseline justify-between rounded-md bg-slate-50 px-3 py-2'>
+          <span class='text-[11px] font-semibold uppercase tracking-widest text-slate-500'>ΔE 2000 al target</span>
+          <span class='text-2xl font-bold tabular-nums text-slate-900' id='sim-delta-e'>—</span>
+        </div>
+      </Card>
+    </div>
+  </div>
+</DashboardLayout>
+
+<script>
+  import { polyfit2, polyval2 } from '@/lib/match-engine/polyfit'
+  import { deltaE2000 } from '@/lib/match-engine/delta-e'
+  import type { Lab } from '@/lib/match-engine/matcher'
+
+  interface CalPoint {
+    letdown_percentage: number
+    lab_l: number
+    lab_a: number
+    lab_b: number
+  }
+  interface InventoryMB {
+    id: number
+    product_name: string
+    supplier_sku: string
+    base_carrier_polymer: string
+    calibration_data: CalPoint[]
+  }
+
+  document.addEventListener('astro:page-load', () => {
+    if (!/^\/dashboard\/simulator\/?$/.test(window.location.pathname)) return
+
+    const addedEl = document.getElementById('sim-added') as HTMLDivElement
+    const swatchEl = document.getElementById('sim-swatch') as HTMLDivElement
+    const totalEl = document.getElementById('sim-total') as HTMLElement
+    const labL = document.getElementById('sim-lab-l') as HTMLElement
+    const labA = document.getElementById('sim-lab-a') as HTMLElement
+    const labB = document.getElementById('sim-lab-b') as HTMLElement
+    const addBtn = document.getElementById('sim-add-btn') as HTMLButtonElement
+    const addMenu = document.getElementById('sim-add-menu') as HTMLDivElement
+    const clearAllBtn = document.getElementById('sim-clear-all') as HTMLButtonElement
+    const normalizeBtn = document.getElementById('sim-normalize') as HTMLButtonElement
+    const baseL = document.getElementById('sim-base-l') as HTMLInputElement
+    const baseA = document.getElementById('sim-base-a') as HTMLInputElement
+    const baseB = document.getElementById('sim-base-b') as HTMLInputElement
+    const totalLoadEl = document.getElementById('sim-total-load') as HTMLInputElement
+    const targetL = document.getElementById('sim-target-l') as HTMLInputElement
+    const targetA = document.getElementById('sim-target-a') as HTMLInputElement
+    const targetB = document.getElementById('sim-target-b') as HTMLInputElement
+    const targetSwatch = document.getElementById('sim-target-swatch') as HTMLDivElement
+    const deltaBlock = document.getElementById('sim-delta-block') as HTMLElement
+    const deltaEEl = document.getElementById('sim-delta-e') as HTMLElement
+
+    // CIELAB → sRGB. Values outside displayable gamut get clamped so the
+    // swatch never renders as magenta from negative RGB overflows.
+    const labToRgbCss = (lab: Lab): string => {
+      const [L, a, b] = lab
+      const fy = (L + 16) / 116
+      const fx = a / 500 + fy
+      const fz = fy - b / 200
+      const eps = 216 / 24389
+      const kappa = 24389 / 27
+      const xr = fx ** 3 > eps ? fx ** 3 : (116 * fx - 16) / kappa
+      const yr = L > 8 ? fy ** 3 : L / kappa
+      const zr = fz ** 3 > eps ? fz ** 3 : (116 * fz - 16) / kappa
+      const X = xr * 0.95047
+      const Y = yr * 1.0
+      const Z = zr * 1.08883
+      let r = X * 3.2406 + Y * -1.5372 + Z * -0.4986
+      let g = X * -0.9689 + Y * 1.8758 + Z * 0.0415
+      let bl = X * 0.0557 + Y * -0.204 + Z * 1.057
+      const toSrgb = (c: number) =>
+        c <= 0.0031308 ? 12.92 * c : 1.055 * Math.pow(Math.max(0, c), 1 / 2.4) - 0.055
+      r = Math.round(Math.min(1, Math.max(0, toSrgb(r))) * 255)
+      g = Math.round(Math.min(1, Math.max(0, toSrgb(g))) * 255)
+      bl = Math.round(Math.min(1, Math.max(0, toSrgb(bl))) * 255)
+      return `rgb(${r}, ${g}, ${bl})`
+    }
+
+    type Curves = [
+      [number, number, number],
+      [number, number, number],
+      [number, number, number]
+    ]
+
+    let inventory: InventoryMB[] = []
+    const curves = new Map<number, Curves>()
+    const addedIds = new Set<number>()
+
+    const getBase = (): Lab => [
+      Number(baseL.value) || 0,
+      Number(baseA.value) || 0,
+      Number(baseB.value) || 0
+    ]
+    const getTotalLoad = () => {
+      const v = Number(totalLoadEl.value)
+      return Number.isFinite(v) && v > 0 ? v : 0
+    }
+
+    const rebuildCurves = () => {
+      const base = getBase()
+      curves.clear()
+      for (const mb of inventory) {
+        if ((mb.calibration_data ?? []).length < 3) continue
+        const concs = mb.calibration_data.map((c) => Number(c.letdown_percentage))
+        const dL = mb.calibration_data.map((c) => Number(c.lab_l) - base[0])
+        const dA = mb.calibration_data.map((c) => Number(c.lab_a) - base[1])
+        const dB = mb.calibration_data.map((c) => Number(c.lab_b) - base[2])
+        try {
+          curves.set(mb.id, [polyfit2(concs, dL), polyfit2(concs, dA), polyfit2(concs, dB)])
+        } catch { /* skip degenerate */ }
+      }
+    }
+
+    const previewColor = (mb: InventoryMB): string => {
+      const c = curves.get(mb.id)
+      if (!c || mb.calibration_data.length === 0) return 'rgb(200,200,200)'
+      const midIdx = Math.floor(mb.calibration_data.length / 2)
+      const midConc = Number(mb.calibration_data[midIdx].letdown_percentage)
+      const base = getBase()
+      return labToRgbCss([
+        base[0] + polyval2(c[0], midConc),
+        base[1] + polyval2(c[1], midConc),
+        base[2] + polyval2(c[2], midConc)
+      ])
+    }
+
+    // Row values are blend ratios (should sum to 100). Absolute % per
+    // pigment is (blend / sumBlend) × totalLoad, and that's what feeds
+    // the polyfit — same math the drawer and the matcher use.
+    const recompute = () => {
+      const base = getBase()
+      const totalLoad = getTotalLoad()
+
+      // Read all row values first so we can compute the blend sum.
+      const rowVals = new Map<number, number>()
+      let blendSum = 0
+      for (const id of addedIds) {
+        const input = document.getElementById(`sim-pct-${id}`) as HTMLInputElement | null
+        const val = Number(input?.value ?? 0)
+        const clean = Number.isFinite(val) && val > 0 ? val : 0
+        rowVals.set(id, clean)
+        blendSum += clean
+      }
+
+      let dL = 0, dA = 0, dB = 0
+      for (const [id, blend] of rowVals) {
+        if (blend <= 0 || blendSum <= 0 || totalLoad <= 0) continue
+        const abs = (blend / blendSum) * totalLoad
+        const c = curves.get(id)
+        if (!c) continue
+        dL += polyval2(c[0], abs)
+        dA += polyval2(c[1], abs)
+        dB += polyval2(c[2], abs)
+      }
+
+      const predicted: Lab = [base[0] + dL, base[1] + dA, base[2] + dB]
+      swatchEl.style.background = labToRgbCss(predicted)
+      labL.textContent = predicted[0].toFixed(2)
+      labA.textContent = predicted[1].toFixed(2)
+      labB.textContent = predicted[2].toFixed(2)
+      totalEl.textContent = `${blendSum.toFixed(3)}%`
+
+      // Target chip + ΔE
+      const tL = Number(targetL.value)
+      const tA = Number(targetA.value)
+      const tB = Number(targetB.value)
+      const targetOk =
+        targetL.value !== '' &&
+        targetA.value !== '' &&
+        targetB.value !== '' &&
+        [tL, tA, tB].every((v) => Number.isFinite(v))
+      if (targetOk) {
+        const target: Lab = [tL, tA, tB]
+        targetSwatch.style.background = labToRgbCss(target)
+        deltaEEl.textContent = deltaE2000(target, predicted).toFixed(2)
+        deltaBlock.classList.remove('hidden')
+        deltaBlock.classList.add('flex')
+      } else {
+        targetSwatch.style.background = 'rgb(241, 245, 249)'
+        deltaBlock.classList.add('hidden')
+        deltaBlock.classList.remove('flex')
+      }
+    }
+
+    const renderAdded = () => {
+      if (addedIds.size === 0) {
+        addedEl.innerHTML = `
+          <div class='rounded-lg border border-dashed border-slate-200 bg-slate-50 py-8 text-center text-xs text-slate-400'>
+            Ningún pigmento agregado todavía. Presioná "Agregar pigmento" abajo.
+          </div>
+        `
+        return
+      }
+      addedEl.innerHTML = Array.from(addedIds)
+        .map((id) => {
+          const mb = inventory.find((m) => m.id === id)
+          if (!mb) return ''
+          const swatch = previewColor(mb)
+          return `
+            <div class='flex items-center gap-3 rounded-lg border border-slate-200 bg-white p-3'>
+              <span
+                class='inline-block h-5 w-5 flex-shrink-0 rounded-full ring-1 ring-black/10'
+                style='background: ${swatch}'
+              ></span>
+              <div class='min-w-0 flex-1'>
+                <div class='truncate text-sm font-semibold text-slate-800'>${mb.product_name}</div>
+                <div class='text-[10px] font-mono text-slate-400'>${mb.supplier_sku}</div>
+              </div>
+              <div class='w-32 flex-shrink-0'>
+                <input
+                  id='sim-pct-${id}'
+                  type='number'
+                  min='0'
+                  step='0.005'
+                  placeholder='0.000'
+                  class='ch-input text-right tabular-nums'
+                />
+              </div>
+              <span class='w-4 text-xs text-slate-500'>%</span>
+              <button
+                type='button'
+                data-remove-id='${id}'
+                class='ml-1 flex-shrink-0 rounded-md p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600'
+                title='Quitar del blend'
+              >
+                <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' class='h-4 w-4'>
+                  <line x1='18' y1='6' x2='6' y2='18'></line>
+                  <line x1='6' y1='6' x2='18' y2='18'></line>
+                </svg>
+              </button>
+            </div>
+          `
+        })
+        .join('')
+
+      for (const id of addedIds) {
+        const input = document.getElementById(`sim-pct-${id}`) as HTMLInputElement | null
+        input?.addEventListener('input', recompute)
+      }
+      addedEl.querySelectorAll('[data-remove-id]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const id = Number((btn as HTMLElement).getAttribute('data-remove-id'))
+          if (Number.isFinite(id)) {
+            addedIds.delete(id)
+            renderAdded()
+            renderAddMenu()
+            recompute()
+          }
+        })
+      })
+    }
+
+    const renderAddMenu = () => {
+      const available = inventory.filter((mb) => !addedIds.has(mb.id))
+      if (available.length === 0) {
+        addMenu.innerHTML =
+          '<div class="p-3 text-xs text-slate-400">Todos los pigmentos del inventario ya están en la mezcla.</div>'
+        return
+      }
+      addMenu.innerHTML = available
+        .map((mb) => {
+          const swatch = previewColor(mb)
+          return `
+            <button
+              type='button'
+              data-add-id='${mb.id}'
+              class='flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-slate-50'
+            >
+              <span
+                class='inline-block h-3.5 w-3.5 flex-shrink-0 rounded-full ring-1 ring-black/10'
+                style='background: ${swatch}'
+              ></span>
+              <div class='min-w-0 flex-1'>
+                <div class='truncate text-xs font-semibold text-slate-800'>${mb.product_name}</div>
+                <div class='text-[10px] font-mono text-slate-400'>${mb.supplier_sku}</div>
+              </div>
+            </button>
+          `
+        })
+        .join('')
+      addMenu.querySelectorAll('[data-add-id]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const id = Number((btn as HTMLElement).getAttribute('data-add-id'))
+          if (Number.isFinite(id)) {
+            addedIds.add(id)
+            addMenu.classList.add('hidden')
+            renderAdded()
+            renderAddMenu()
+            recompute()
+          }
+        })
+      })
+    }
+
+    fetch('/api/masterbatches')
+      .then((r) => r.json())
+      .then((data) => {
+        inventory = (data.masterbatches ?? []) as InventoryMB[]
+        rebuildCurves()
+        renderAdded()
+        renderAddMenu()
+        recompute()
+      })
+      .catch(() => {
+        addedEl.innerHTML =
+          '<div class="rounded-lg border border-rose-200 bg-rose-50 p-4 text-xs text-rose-700">Error al cargar el inventario.</div>'
+      })
+
+    // Base changes → rebuild polyfit curves (they're shifts relative to base).
+    ;[baseL, baseA, baseB].forEach((el) =>
+      el.addEventListener('input', () => {
+        rebuildCurves()
+        renderAdded()
+        renderAddMenu()
+        recompute()
+      })
+    )
+    // Total load changes → just recompute (curves don't depend on load).
+    totalLoadEl.addEventListener('input', recompute)
+    ;[targetL, targetA, targetB].forEach((el) => el.addEventListener('input', recompute))
+
+    addBtn.addEventListener('click', (e) => {
+      e.stopPropagation()
+      addMenu.classList.toggle('hidden')
+    })
+    document.addEventListener('click', (e) => {
+      if (!addMenu.contains(e.target as Node) && e.target !== addBtn) {
+        addMenu.classList.add('hidden')
+      }
+    })
+
+    normalizeBtn.addEventListener('click', () => {
+      // Rescale current row values so their sum is exactly 100.
+      let sum = 0
+      const vals: Array<[number, number]> = []
+      for (const id of addedIds) {
+        const input = document.getElementById(`sim-pct-${id}`) as HTMLInputElement | null
+        const v = Number(input?.value ?? 0)
+        const clean = Number.isFinite(v) && v > 0 ? v : 0
+        vals.push([id, clean])
+        sum += clean
+      }
+      if (sum <= 0) return
+      for (const [id, v] of vals) {
+        const input = document.getElementById(`sim-pct-${id}`) as HTMLInputElement | null
+        if (input) input.value = ((v / sum) * 100).toFixed(3)
+      }
+      recompute()
+    })
+
+    clearAllBtn.addEventListener('click', () => {
+      addedIds.clear()
+      renderAdded()
+      renderAddMenu()
+      recompute()
+    })
+  })
+</script>

@@ -56,7 +56,10 @@ on conflict (organization_id, name) do nothing;
 
 -- Clean out prior seed masterbatches so re-runs stay consistent.
 -- Cascades to their calibration_data rows.
-delete from masterbatches where supplier_sku in ('PV7-SINCOL', 'PA14-SINCOL') and organization_id = 1;
+delete from masterbatches where supplier_sku in (
+  'PV7-SINCOL', 'PA14-SINCOL',
+  'PR254-DEMO', 'PB15-DEMO', 'PBk7-DEMO'
+) and organization_id = 1;
 
 -- --- Pigmento Verde 7 (Sincol) — phthalocyanine green ---
 -- Back-calibrated with τ = 3.1, base (100, 0, 0):
@@ -95,6 +98,57 @@ cross join (values
   (15.0::numeric, 94.48::numeric, 2.25::numeric, 32.44::numeric)
 ) as x(pct, l, a, b)
 where m.supplier_sku = 'PA14-SINCOL' and m.organization_id = 1;
+
+-- --- Rojo P.R. 254 (demo) — quinacridone / DPP red ---
+-- Estimated with masstone (30, 55, 40), τ = 3, base (100, 0, 0).
+-- Anchor color close to RAL 3001 / RAL 3020 at chip loading.
+insert into masterbatches (organization_id, provider_id, product_name, supplier_sku, color_index_num, base_carrier_polymer, current_stock_kg, internal_notes, calibration_source)
+select 1, id, 'Rojo Demo (P.R. 254)', 'PR254-DEMO', 'P.R. 254', 'wax', 10.0, 'Seed: curva estimada (τ=3) desde masstone (30, 55, 40)', 'estimated'
+from providers where name = 'Sincol' and organization_id = 1;
+
+insert into calibration_data (masterbatch_id, letdown_percentage, lab_l, lab_a, lab_b)
+select m.id, x.pct, x.l, x.a, x.b
+from masterbatches m
+cross join (values
+  (2.0::numeric,  65.91::numeric, 26.79::numeric, 19.48::numeric),
+  (8.0::numeric,  34.83::numeric, 51.21::numeric, 37.24::numeric),
+  (15.0::numeric, 30.49::numeric, 54.62::numeric, 39.72::numeric)
+) as x(pct, l, a, b)
+where m.supplier_sku = 'PR254-DEMO' and m.organization_id = 1;
+
+-- --- Azul P.B. 15:3 (demo) — phthalocyanine blue ---
+-- Estimated with masstone (25, 5, -50), τ = 2.5, base (100, 0, 0).
+-- Anchor color close to RAL 5002 / RAL 5017 at chip loading.
+insert into masterbatches (organization_id, provider_id, product_name, supplier_sku, color_index_num, base_carrier_polymer, current_stock_kg, internal_notes, calibration_source)
+select 1, id, 'Azul Demo (P.B. 15:3)', 'PB15-DEMO', 'P.B. 15:3', 'wax', 10.0, 'Seed: curva estimada (τ=2.5) desde masstone (25, 5, -50)', 'estimated'
+from providers where name = 'Sincol' and organization_id = 1;
+
+insert into calibration_data (masterbatch_id, letdown_percentage, lab_l, lab_a, lab_b)
+select m.id, x.pct, x.l, x.a, x.b
+from masterbatches m
+cross join (values
+  (2.0::numeric,  58.68::numeric,  2.75::numeric, -27.53::numeric),
+  (8.0::numeric,  28.00::numeric,  4.80::numeric, -47.99::numeric),
+  (15.0::numeric, 25.15::numeric,  4.99::numeric, -49.90::numeric)
+) as x(pct, l, a, b)
+where m.supplier_sku = 'PB15-DEMO' and m.organization_id = 1;
+
+-- --- Negro P.Bk. 7 (demo) — carbon black ---
+-- Estimated with masstone (14, 0, 0), τ = 2, base (100, 0, 0).
+-- Very strong pigment — near-black at low loadings.
+insert into masterbatches (organization_id, provider_id, product_name, supplier_sku, color_index_num, base_carrier_polymer, current_stock_kg, internal_notes, calibration_source)
+select 1, id, 'Negro Demo (P.Bk. 7)', 'PBk7-DEMO', 'P.Bk. 7', 'wax', 10.0, 'Seed: curva estimada (τ=2) desde masstone (14, 0, 0)', 'estimated'
+from providers where name = 'Sincol' and organization_id = 1;
+
+insert into calibration_data (masterbatch_id, letdown_percentage, lab_l, lab_a, lab_b)
+select m.id, x.pct, x.l, x.a, x.b
+from masterbatches m
+cross join (values
+  (2.0::numeric,  45.65::numeric, 0::numeric, 0::numeric),
+  (8.0::numeric,  15.55::numeric, 0::numeric, 0::numeric),
+  (15.0::numeric, 14.00::numeric, 0::numeric, 0::numeric)
+) as x(pct, l, a, b)
+where m.supplier_sku = 'PBk7-DEMO' and m.organization_id = 1;
 
 -- --- Clients (starter set) ---
 insert into clients (organization_id, name, contact_email, default_carrier_polymer, notes) values
