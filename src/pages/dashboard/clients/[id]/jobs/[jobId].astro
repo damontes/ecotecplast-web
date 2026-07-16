@@ -24,16 +24,19 @@ import DashboardLayout from '@/dashboard/layouts/DashboardLayout.astro'
   {/* Status band skeleton */}
   <div id='status-band' class='mb-5 h-24 animate-pulse rounded-lg bg-slate-200' />
 
-  {/* Color chips skeleton */}
-  <div id='color-chips' class='mb-6 grid gap-4 sm:grid-cols-2'>
-    <div class='rounded-lg ring-1 ring-slate-200 overflow-hidden'>
-      <div class='h-32 animate-pulse bg-slate-200' />
-      <div class='p-2'><div class='h-3 w-32 animate-pulse rounded bg-slate-200' /></div>
+  {/* Color chips skeleton — two big chips on top, small base chip below. */}
+  <div id='color-chips' class='mb-6 space-y-3'>
+    <div class='grid gap-4 sm:grid-cols-2'>
+      <div class='rounded-lg ring-1 ring-slate-200 overflow-hidden'>
+        <div class='h-32 animate-pulse bg-slate-200' />
+        <div class='p-2'><div class='h-3 w-32 animate-pulse rounded bg-slate-200' /></div>
+      </div>
+      <div class='rounded-lg ring-1 ring-slate-200 overflow-hidden'>
+        <div class='h-32 animate-pulse bg-slate-200' />
+        <div class='p-2'><div class='h-3 w-32 animate-pulse rounded bg-slate-200' /></div>
+      </div>
     </div>
-    <div class='rounded-lg ring-1 ring-slate-200 overflow-hidden'>
-      <div class='h-32 animate-pulse bg-slate-200' />
-      <div class='p-2'><div class='h-3 w-32 animate-pulse rounded bg-slate-200' /></div>
-    </div>
+    <div class='h-12 animate-pulse rounded-lg bg-slate-200' />
   </div>
 
   {/* Result body — replaced after fetch */}
@@ -354,24 +357,36 @@ import DashboardLayout from '@/dashboard/layouts/DashboardLayout.astro'
           `
         }
 
-        // Color chips: target + base (or target + closest if failure)
+        // Color chips: two big chips side-by-side (target + predicted/closest)
+        // plus a smaller base chip in a strip below. On success we show
+        // the predicted Lab from the recipe so the operator can compare
+        // "what they asked for" vs "what the recipe produces" at a glance.
         const secondLab = success
-          ? base
+          ? (j.calculated_recipe?.predicted_coordinates ?? target)
           : (j.calculated_recipe?.closest_achievable_coordinates ?? j.calculated_recipe?.predicted_coordinates ?? base)
-        const secondLabel = success ? 'Color base' : 'Aproximación más cercana'
+        const secondLabel = success ? 'Color predicho' : 'Aproximación más cercana'
         chipsEl.innerHTML = `
-          <div class='rounded-lg ring-1 ring-slate-200 overflow-hidden'>
-            <div class='h-32' style='background: ${labToRgbCss(target)}'></div>
-            <div class='flex items-center justify-between bg-white px-3 py-2'>
-              <span class='text-xs font-semibold uppercase tracking-widest text-slate-500'>Color objetivo</span>
-              <span class='text-[11px] tabular-nums text-slate-600'>L ${target[0].toFixed(1)} · a ${target[1].toFixed(1)} · b ${target[2].toFixed(1)}</span>
+          <div class='grid grid-cols-2 gap-4'>
+            <div class='rounded-lg ring-1 ring-slate-200 overflow-hidden'>
+              <div class='h-32' style='background: ${labToRgbCss(target)}'></div>
+              <div class='flex items-center justify-between bg-white px-3 py-2'>
+                <span class='text-xs font-semibold uppercase tracking-widest text-slate-500'>Color objetivo</span>
+                <span class='text-[11px] tabular-nums text-slate-600'>L ${target[0].toFixed(1)} · a ${target[1].toFixed(1)} · b ${target[2].toFixed(1)}</span>
+              </div>
+            </div>
+            <div class='rounded-lg ring-1 ring-slate-200 overflow-hidden'>
+              <div class='h-32' style='background: ${labToRgbCss(secondLab)}'></div>
+              <div class='flex items-center justify-between bg-white px-3 py-2'>
+                <span class='text-xs font-semibold uppercase tracking-widest text-slate-500'>${secondLabel}</span>
+                <span class='text-[11px] tabular-nums text-slate-600'>L ${secondLab[0].toFixed(1)} · a ${secondLab[1].toFixed(1)} · b ${secondLab[2].toFixed(1)}</span>
+              </div>
             </div>
           </div>
-          <div class='rounded-lg ring-1 ring-slate-200 overflow-hidden'>
-            <div class='h-32' style='background: ${labToRgbCss(secondLab)}'></div>
-            <div class='flex items-center justify-between bg-white px-3 py-2'>
-              <span class='text-xs font-semibold uppercase tracking-widest text-slate-500'>${secondLabel}</span>
-              <span class='text-[11px] tabular-nums text-slate-600'>L ${secondLab[0].toFixed(1)} · a ${secondLab[1].toFixed(1)} · b ${secondLab[2].toFixed(1)}</span>
+          <div class='flex items-center gap-3 rounded-lg ring-1 ring-slate-200 overflow-hidden bg-white px-3 py-2'>
+            <div class='h-8 w-14 flex-shrink-0 rounded-md ring-1 ring-slate-200' style='background: ${labToRgbCss(base)}'></div>
+            <div class='flex flex-1 items-center justify-between'>
+              <span class='text-xs font-semibold uppercase tracking-widest text-slate-500'>Color base</span>
+              <span class='text-[11px] tabular-nums text-slate-600'>L ${base[0].toFixed(1)} · a ${base[1].toFixed(1)} · b ${base[2].toFixed(1)}</span>
             </div>
           </div>
         `

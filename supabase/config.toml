@@ -28,9 +28,26 @@ port = 54323
 enabled = true
 site_url = "http://localhost:4321"
 additional_redirect_urls = ["https://ecotecplast.com"]
-jwt_expiry = 3600
+# JWT access token lifetime. Max allowed by Supabase is 604800 (7 days).
+# 86400 (24h) is a balance: operators don't hit re-login during a shift,
+# and the token is refreshed transparently via the refresh_token every
+# time the app calls the API. If ever compromised, blast radius is ≤24h.
+jwt_expiry = 86400
 enable_signup = false
 enable_anonymous_sign_ins = false
+
+# Session lifetime — the "keep me logged in" behavior. The supabase-js
+# client auto-refreshes the JWT while the app is open, so the operator
+# stays logged in continuously as long as they use the platform.
+#
+# timebox: absolute max session duration — after 7 months the user is
+# forced to sign in again, regardless of activity. Security best practice.
+#
+# inactivity_timeout: if the app is closed / not used for 7 days, the
+# refresh token is invalidated and the user must sign in again.
+[auth.sessions]
+timebox = "5040h"
+inactivity_timeout = "168h"
 
 [auth.email]
 enable_signup = false
