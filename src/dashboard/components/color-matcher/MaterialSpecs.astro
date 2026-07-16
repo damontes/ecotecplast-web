@@ -1,7 +1,6 @@
 ---
 import Card from '@/dashboard/components/ui/Card.astro'
 import SelectField from '@/dashboard/components/ui/SelectField.astro'
-import NumberField from '@/dashboard/components/ui/NumberField.astro'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 
 const supabase = createSupabaseServerClient(Astro.request, Astro.cookies)
@@ -20,7 +19,6 @@ const clientOptions =
   }))
 
 const polymers = [
-  { value: 'wax', label: 'Cera + CaCO3 (matriz de monopigmento)' },
   { value: 'pe', label: 'PE (Polyethylene)' },
   { value: 'hdpe', label: 'HDPE' },
   { value: 'pp', label: 'PP (Polypropylene)' },
@@ -50,7 +48,7 @@ const clientDefaultsJson = JSON.stringify(
 ---
 
 <Card title='Especificaciones del Material' eyebrow='Paso 01'>
-  <div class='grid gap-4 sm:grid-cols-2 lg:grid-cols-4'>
+  <div class='grid gap-4 sm:grid-cols-3'>
     <div>
       <SelectField id='client-id' label='Cliente *' options={clientOptionsForSelect} value='' />
       {
@@ -63,13 +61,6 @@ const clientDefaultsJson = JSON.stringify(
     </div>
     <SelectField id='carrier-polymer' label='Polímero Portador *' options={polymers} value='pe' />
     <SelectField id='pass-threshold' label='Tolerancia de Aprobación *' options={tolerances} value='1.0' />
-    <NumberField
-      id='total-max-pct'
-      label='Carga Máx. Pigmento (%) *'
-      value='4'
-      step='0.1'
-      placeholder='4'
-    />
   </div>
 
   <div class='mt-4 flex items-center gap-2 rounded-md bg-slate-50 px-3 py-2 text-[11px] text-slate-500'>
@@ -88,7 +79,7 @@ const clientDefaultsJson = JSON.stringify(
       <line x1='12' y1='8' x2='12.01' y2='8'></line>
     </svg>
     <span>
-      El polímero portador restringe qué masterbatches son elegibles. La <strong>carga máxima de pigmento</strong> define el techo que el matcher puede usar — típicamente 4% para piezas finales y 15–20% para formulación de monopigmentos.
+      El polímero portador restringe qué masterbatches son elegibles. El matcher busca recetas con carga total ≤ <strong>4% del chip</strong> (estándar industrial para piezas plásticas).
     </span>
   </div>
 </Card>

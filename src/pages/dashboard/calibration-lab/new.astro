@@ -54,6 +54,15 @@ import CalibrationData from '@/dashboard/components/calibration-lab/CalibrationD
     const okBox = document.getElementById('calibration-success') as HTMLDivElement | null
 
     const num = (id: string) => Number((document.getElementById(id) as HTMLInputElement | null)?.value ?? NaN)
+    // Same as num() but returns NaN for empty strings instead of 0. Needed
+    // where "empty" and "0" are semantically distinct (e.g. detecting which
+    // calibration fields the operator filled in vs left blank).
+    const numOrNaN = (id: string): number => {
+      const raw = (document.getElementById(id) as HTMLInputElement | null)?.value ?? ''
+      if (raw.trim() === '') return NaN
+      const n = Number(raw)
+      return Number.isFinite(n) ? n : NaN
+    }
     const str = (id: string) => (document.getElementById(id) as HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement | null)?.value ?? ''
 
     const showErr = (msg: string) => {
@@ -81,15 +90,14 @@ import CalibrationData from '@/dashboard/components/calibration-lab/CalibrationD
         base_carrier_polymer: str('base-carrier'),
         current_stock_kg: Number(str('stock-level')) || 0,
         internal_notes: str('internal-notes').trim() || null,
-        // Calibration curve — MB is characterized by chips at 2 / 8 / 15%
-        // pigment loading. The 8% is the measured anchor; 2% and 15% are
-        // auto-estimated via exponential model (with default τ=4) but the
-        // operator can override any of the three fields.
+        // Calibration curve — chip at 0.5 / 1 / 2% pigment loading in resin.
+        // The 1% is the typical "measured" anchor; 0.5% and 2% can be either
+        // measured or estimated from the anchor via the exponential model.
         calibration_source: 'estimated' as 'estimated' | 'measured',
         calibration: [
-          { letdown_percentage: 2.0,  lab_l: num('calib-02-l'), lab_a: num('calib-02-a'), lab_b: num('calib-02-b') },
-          { letdown_percentage: 8.0,  lab_l: num('calib-08-l'), lab_a: num('calib-08-a'), lab_b: num('calib-08-b') },
-          { letdown_percentage: 15.0, lab_l: num('calib-15-l'), lab_a: num('calib-15-a'), lab_b: num('calib-15-b') }
+          { letdown_percentage: 0.5, lab_l: num('calib-05-l'), lab_a: num('calib-05-a'), lab_b: num('calib-05-b') },
+          { letdown_percentage: 1.0, lab_l: num('calib-10-l'), lab_a: num('calib-10-a'), lab_b: num('calib-10-b') },
+          { letdown_percentage: 2.0, lab_l: num('calib-20-l'), lab_a: num('calib-20-a'), lab_b: num('calib-20-b') }
         ]
       }
 
@@ -125,44 +133,158 @@ import CalibrationData from '@/dashboard/components/calibration-lab/CalibrationD
       }, 600)
     }
 
-    // Estimate 2% and 15% from the operator's 8% chip measurement.
-    // Uses the exponential saturation model with default τ = 4 (medium-
-    // strength pigment). Base assumed (100, 0, 0) — white matrix.
+    // Fill in the missing calibration points from whatever the operator has.
+    // Uses the exponential saturation model with default τ = 1.5 — matches
+    // typical strong industrial pigments in resin at chip loading (0.5-2%).
     //
     //   Lab(c) = Base + (Masstone - Base) × (1 − e^(−c/τ))
     //
-    // From the 8% measurement we solve backwards for the masstone-equivalent
-    // shift, then scale down to 2% and up to 15% via the same τ. Any of
-    // the 9 fields stays editable — the operator can override our estimate.
-    const TAU_DEFAULT = 4.0
+    // Given ANY subset of the 3 points, we solve backwards from each filled
+    // point for what the masstone would be, average when we have multiple
+    // anchors, then project onto the missing points. Base is assumed
+    // (100, 0, 0) — white resin chip.
+    const TAU_DEFAULT = 1.5
     const S = (c: number) => 1 - Math.exp(-c / TAU_DEFAULT)
-    const S8 = S(8)
-    const ratio2 = S(2) / S8    // ≈ 0.454
-    const ratio15 = S(15) / S8  // ≈ 1.129
+    const S05 = S(0.5)
+    const S10 = S(1.0)
+    const S20 = S(2.0)
     const BASE_L = 100
     const BASE_A = 0
     const BASE_B = 0
 
+    // Fields keyed by their concentration.
+    const POINTS = [
+      { pct: 0.5, prefix: 'calib-05', s: S05 },
+      { pct: 1.0, prefix: 'calib-10', s: S10 },
+      { pct: 2.0, prefix: 'calib-20', s: S20 }
+    ] as const
+
     const estimateCurve = () => {
-      const l8 = num('calib-08-l')
-      const a8 = num('calib-08-a')
-      const b8 = num('calib-08-b')
-      if ([l8, a8, b8].some((n) => !Number.isFinite(n))) {
-        showErr('Ingresa el Lab del chip al 8% antes de estimar los otros puntos.')
-        return
-      }
       const setVal = (id: string, v: number) => {
         const el = document.getElementById(id) as HTMLInputElement | null
         if (el) el.value = v.toFixed(2)
       }
-      setVal('calib-02-l', BASE_L + (l8 - BASE_L) * ratio2)
-      setVal('calib-02-a', BASE_A + (a8 - BASE_A) * ratio2)
-      setVal('calib-02-b', BASE_B + (b8 - BASE_B) * ratio2)
-      setVal('calib-15-l', BASE_L + (l8 - BASE_L) * ratio15)
-      setVal('calib-15-a', BASE_A + (a8 - BASE_A) * ratio15)
-      setVal('calib-15-b', BASE_B + (b8 - BASE_B) * ratio15)
-      showOk('Puntos 2% y 15% estimados. Puedes ajustarlos manualmente antes de guardar.')
+
+      // For each channel (L/a/b), find filled points and estimate missing.
+      const channels = ['l', 'a', 'b'] as const
+      const bases = { l: BASE_L, a: BASE_A, b: BASE_B }
+
+      let anyEstimated = false
+      let missingAll = false
+      const clampWarnings: string[] = []
+
+      for (const ch of channels) {
+        // Collect anchor points (concentration, measured value) that are filled.
+        // Uses numOrNaN — empty strings must count as "missing", not as 0.
+        const anchors: Array<{ s: number; shift: number }> = []
+        for (const p of POINTS) {
+          const val = numOrNaN(`${p.prefix}-${ch}`)
+          if (Number.isFinite(val)) {
+            anchors.push({ s: p.s, shift: val - bases[ch] })
+          }
+        }
+        if (anchors.length === 0) {
+          missingAll = true
+          continue
+        }
+        // From each anchor: masstone_shift ≈ shift / s. Average across anchors
+        // to smooth out measurement noise when 2 are given.
+        const masstoneShift = anchors.reduce((acc, a) => acc + a.shift / a.s, 0) / anchors.length
+
+        // Fill any point that was empty. Clamp to CIELAB valid ranges so
+        // impossible values (L* < 0 or > 100, a*/b* outside ±128) never
+        // reach the DB — they usually indicate a badly-measured anchor
+        // that produced an absurd masstone extrapolation.
+        for (const p of POINTS) {
+          const val = numOrNaN(`${p.prefix}-${ch}`)
+          if (!Number.isFinite(val)) {
+            let estimated = bases[ch] + masstoneShift * p.s
+            if (ch === 'l') {
+              if (estimated < 0 || estimated > 100) {
+                clampWarnings.push(`L* al ${p.pct}% dio ${estimated.toFixed(2)} (fuera de rango) — revisá los chips medidos`)
+                estimated = Math.max(0, Math.min(100, estimated))
+              }
+            } else {
+              if (estimated < -128 || estimated > 128) {
+                clampWarnings.push(`${ch.toUpperCase()}* al ${p.pct}% dio ${estimated.toFixed(2)} (fuera de rango) — revisá los chips medidos`)
+                estimated = Math.max(-128, Math.min(128, estimated))
+              }
+            }
+            setVal(`${p.prefix}-${ch}`, estimated)
+            anyEstimated = true
+          }
+        }
+      }
+
+      if (missingAll) {
+        showErr('Ingresa al menos un punto de calibración (con L*, a* y b*) antes de estimar.')
+        return
+      }
+      if (!anyEstimated) {
+        showOk('Los 3 puntos ya están completos. No hay nada que estimar.')
+        return
+      }
+      if (clampWarnings.length > 0) {
+        showErr(
+          'Puntos estimados pero algunos fueron recortados al rango CIELAB válido. ' +
+          clampWarnings.slice(0, 3).join(' · ')
+        )
+      } else {
+        showOk('Puntos faltantes estimados. Puedes ajustarlos manualmente antes de guardar.')
+      }
+      updateAllChips()
     }
+
+    // Live chip preview per calibration point — CIELAB → sRGB (same
+    // conversion the matcher and simulator use).
+    const labToRgbCss = (L: number, a: number, b: number): string => {
+      const fy = (L + 16) / 116
+      const fx = a / 500 + fy
+      const fz = fy - b / 200
+      const eps = 216 / 24389
+      const kappa = 24389 / 27
+      const xr = fx ** 3 > eps ? fx ** 3 : (116 * fx - 16) / kappa
+      const yr = L > 8 ? fy ** 3 : L / kappa
+      const zr = fz ** 3 > eps ? fz ** 3 : (116 * fz - 16) / kappa
+      const X = xr * 0.95047
+      const Y = yr * 1.0
+      const Z = zr * 1.08883
+      let r = X * 3.2406 + Y * -1.5372 + Z * -0.4986
+      let g = X * -0.9689 + Y * 1.8758 + Z * 0.0415
+      let bl = X * 0.0557 + Y * -0.204 + Z * 1.057
+      const toSrgb = (c: number) =>
+        c <= 0.0031308 ? 12.92 * c : 1.055 * Math.pow(Math.max(0, c), 1 / 2.4) - 0.055
+      r = Math.round(Math.min(1, Math.max(0, toSrgb(r))) * 255)
+      g = Math.round(Math.min(1, Math.max(0, toSrgb(g))) * 255)
+      bl = Math.round(Math.min(1, Math.max(0, toSrgb(bl))) * 255)
+      return `rgb(${r}, ${g}, ${bl})`
+    }
+
+    const updateChip = (prefix: string) => {
+      const l = numOrNaN(`${prefix}-l`)
+      const a = numOrNaN(`${prefix}-a`)
+      const b = numOrNaN(`${prefix}-b`)
+      const chipEl = document.getElementById(`${prefix}-chip`) as HTMLElement | null
+      if (!chipEl) return
+      if ([l, a, b].every((n) => Number.isFinite(n))) {
+        chipEl.style.background = labToRgbCss(l, a, b)
+      } else {
+        chipEl.style.background = 'rgb(241, 245, 249)'  // neutral gray
+      }
+    }
+
+    const CALIB_PREFIXES = ['calib-05', 'calib-10', 'calib-20']
+    const updateAllChips = () => {
+      for (const p of CALIB_PREFIXES) updateChip(p)
+    }
+    // Wire every calibration input to refresh its row's chip on change.
+    for (const prefix of CALIB_PREFIXES) {
+      for (const ch of ['l', 'a', 'b']) {
+        const el = document.getElementById(`${prefix}-${ch}`)
+        el?.addEventListener('input', () => updateChip(prefix))
+      }
+    }
+    updateAllChips()
 
     document.querySelectorAll('[data-estimate-curve]').forEach((el) => {
       el.addEventListener('click', (event) => {

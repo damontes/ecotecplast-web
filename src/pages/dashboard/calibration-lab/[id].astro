@@ -175,8 +175,8 @@ import ConfirmDialog from '@/dashboard/components/ui/ConfirmDialog.astro'
         }>
         const sorted = [...calData].sort((a, b) => a.letdown_percentage - b.letdown_percentage)
         const tagMap: Record<number, { label: string; variant: string }> = {
-          2: { label: 'Estimado desde 8%', variant: 'standard' },
-          15: { label: 'Estimado desde 8%', variant: 'saturation' }
+          0.5: { label: 'Carga Estándar', variant: 'standard' },
+          2.0: { label: 'Carga de Saturación', variant: 'saturation' }
         }
 
         if (calibBody) {

@@ -6,16 +6,16 @@ import ConcentrationCard from '@/dashboard/components/calibration-lab/Concentrat
 <Card title='Curva de Calibración de Color' eyebrow='Curva de 3 puntos' right='UNIDAD: CIELAB (D65/10°)'>
   <div class='space-y-4'>
     <ConcentrationCard
-      title='Carga 2%'
-      idPrefix='calib-02'
-      tag='Estimado desde 8%'
+      title='Carga 0.5%'
+      idPrefix='calib-05'
+      tag='Carga Estándar'
       tagVariant='standard'
     />
-    <ConcentrationCard title='Carga 8% (medido)' idPrefix='calib-08' />
+    <ConcentrationCard title='Carga 1% (medido)' idPrefix='calib-10' />
     <ConcentrationCard
-      title='Carga 15%'
-      idPrefix='calib-15'
-      tag='Estimado desde 8%'
+      title='Carga 2%'
+      idPrefix='calib-20'
+      tag='Carga de Saturación'
       tagVariant='saturation'
     />
   </div>
@@ -37,7 +37,7 @@ import ConcentrationCard from '@/dashboard/components/calibration-lab/Concentrat
         <line x1='12' y1='8' x2='12.01' y2='8'></line>
       </svg>
       <p class='text-xs italic text-sky-800'>
-        Ingresa el Lab medido del chip al 8%. Al presionar <b>Estimar 2% y 15%</b>, el sistema calcula los otros dos puntos usando el modelo exponencial (τ = 4 por defecto). Los tres valores quedan editables.
+        Ingresa el Lab medido de al menos <b>uno</b> de los tres puntos (0.5, 1 o 2%). Al presionar <b>Estimar faltantes</b>, el sistema calcula los puntos vacíos usando el modelo exponencial. Todos los valores quedan editables.
       </p>
     </div>
     <button
@@ -45,7 +45,7 @@ import ConcentrationCard from '@/dashboard/components/calibration-lab/Concentrat
       data-estimate-curve
       class='flex-shrink-0 whitespace-nowrap rounded-md bg-sky-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-1'
     >
-      Estimar 2% y 15%
+      Estimar faltantes
     </button>
   </div>
 </Card>

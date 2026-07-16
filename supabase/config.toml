@@ -14,13 +14,11 @@ shadow_port = 54320
 major_version = 15
 
 [db.seed]
-# Auto-run on `supabase db reset` (local + --linked). Points to the
-# RAL Classic reference-color library only — safe for production because
-# it seeds industry-standard color hints, not fake providers/masterbatches.
-# seed.sql (with PV7/PA14 demo data and fake clients) is intentionally
-# excluded — apply it manually with `psql -f supabase/seed.sql` when you
-# want dev fixtures.
-sql_paths = ["./seed_references.sql"]
+# Auto-run on `supabase db reset` (local + --linked). Default now points
+# back to seed.sql — safe because it no longer inserts demo masterbatches
+# (only providers, sample clients, and RAL reference colors). The operator
+# adds real MBs via /dashboard/calibration-lab/new.
+sql_paths = ["./seed.sql"]
 
 [studio]
 enabled = true

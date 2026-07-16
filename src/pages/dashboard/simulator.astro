@@ -37,23 +37,25 @@ import Card from '@/dashboard/components/ui/Card.astro'
     {/* Left column: base + total + pigment rows */}
     <div class='lg:col-span-3'>
       <Card title='Pigmentos en la mezcla' eyebrow='Mezcla' right='Valores en % del blend (suman 100)'>
-        {/* Base + carga total inputs */}
+        {/* Base + total pigment load — the operator can experiment with
+            different total loads (typical range 0.5-4% for chip formulation,
+            can go higher for research). */}
         <div class='mb-4 grid gap-4 sm:grid-cols-4'>
-          <div class='sm:col-span-1'>
+          <div>
             <label for='sim-base-l' class='ch-label'>Base L*</label>
             <input id='sim-base-l' type='number' step='0.01' value='100' class='ch-input text-center' />
           </div>
-          <div class='sm:col-span-1'>
+          <div>
             <label for='sim-base-a' class='ch-label'>Base a*</label>
             <input id='sim-base-a' type='number' step='0.01' value='0' class='ch-input text-center' />
           </div>
-          <div class='sm:col-span-1'>
+          <div>
             <label for='sim-base-b' class='ch-label'>Base b*</label>
             <input id='sim-base-b' type='number' step='0.01' value='0' class='ch-input text-center' />
           </div>
-          <div class='sm:col-span-1'>
+          <div>
             <label for='sim-total-load' class='ch-label'>Carga total (%)</label>
-            <input id='sim-total-load' type='number' step='0.005' value='15.000' class='ch-input text-center' />
+            <input id='sim-total-load' type='number' step='0.005' value='4.000' class='ch-input text-center' />
           </div>
         </div>
 

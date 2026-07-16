@@ -64,10 +64,10 @@ import ConfirmDialog from '@/dashboard/components/ui/ConfirmDialog.astro'
     {/* Calibration */}
     <Card title='Curva de Calibración de Color' eyebrow='Edición' right='UNIDAD: CIELAB (D65/10°)'>
       <div class='space-y-4'>
-        {[2, 8, 15].map((pct) => {
-          const prefix = pct === 2 ? 'calib-02' : pct === 8 ? 'calib-08' : 'calib-15'
-          const tag = pct === 8 ? null : 'Estimado desde 8%'
-          const tagClass = pct === 2
+        {[0.5, 1.0, 2.0].map((pct) => {
+          const prefix = pct === 0.5 ? 'calib-05' : pct === 1.0 ? 'calib-10' : 'calib-20'
+          const tag = pct === 0.5 ? 'Carga Estándar' : pct === 2.0 ? 'Carga de Saturación' : null
+          const tagClass = pct === 0.5
             ? 'bg-blue-50 text-blue-700 ring-blue-100'
             : 'bg-violet-50 text-violet-700 ring-violet-100'
           return (
@@ -237,9 +237,9 @@ import ConfirmDialog from '@/dashboard/components/ui/ConfirmDialog.astro'
           lab_b: number
         }>
         for (const pt of calData) {
-          const prefix = pt.letdown_percentage === 2.0 ? 'calib-02'
-            : pt.letdown_percentage === 8.0 ? 'calib-08'
-            : 'calib-15'
+          const prefix = pt.letdown_percentage === 0.5 ? 'calib-05'
+            : pt.letdown_percentage === 1.0 ? 'calib-10'
+            : 'calib-20'
           setVal(`${prefix}-l`, String(pt.lab_l))
           setVal(`${prefix}-a`, String(pt.lab_a))
           setVal(`${prefix}-b`, String(pt.lab_b))
@@ -268,9 +268,9 @@ import ConfirmDialog from '@/dashboard/components/ui/ConfirmDialog.astro'
         current_stock_kg: Number(val('edit-stock')) || 0,
         internal_notes: val('edit-notes').trim() || null,
         calibration: [
-          { letdown_percentage: 2.0,  lab_l: num('calib-02-l'), lab_a: num('calib-02-a'), lab_b: num('calib-02-b') },
-          { letdown_percentage: 8.0,  lab_l: num('calib-08-l'), lab_a: num('calib-08-a'), lab_b: num('calib-08-b') },
-          { letdown_percentage: 15.0, lab_l: num('calib-15-l'), lab_a: num('calib-15-a'), lab_b: num('calib-15-b') }
+          { letdown_percentage: 0.5, lab_l: num('calib-05-l'), lab_a: num('calib-05-a'), lab_b: num('calib-05-b') },
+          { letdown_percentage: 1.0, lab_l: num('calib-10-l'), lab_a: num('calib-10-a'), lab_b: num('calib-10-b') },
+          { letdown_percentage: 2.0, lab_l: num('calib-20-l'), lab_a: num('calib-20-a'), lab_b: num('calib-20-b') }
         ]
       }
 
