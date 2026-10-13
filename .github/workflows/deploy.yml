@@ -34,7 +34,9 @@ name: Supabase + Vercel Deploy
 #                              (optional; defaults to https://<vercel-name>.vercel.app)
 #   Per-environment secrets:
 #     SUPABASE_ACCESS_TOKEN  - Management API token (DB write + Auth config)
-#     SUPABASE_DB_URL        - hosted Postgres Session pooler URI (IPv4, port 5432)
+#     SUPABASE_DB_URL        - hosted Postgres Session pooler URI (IPv4, port 5432),
+#                              e.g. postgresql://postgres.<ref>:<pw>@aws-1-<region>.pooler.supabase.com:5432/postgres
+#                              (the workflow auto-retries the alternate aws-0/aws-1 prefix)
 #     SUPABASE_PUBLISHABLE_KEY - sb_publishable_* (or legacy anon key)
 #     SUPABASE_SECRET_KEY    - sb_secret_* (or legacy service_role key)
 #
@@ -141,13 +143,35 @@ jobs:
       - name: Apply migrations
         run: |
           set -euo pipefail
-          if [ "$IS_PRODUCTION" = "true" ]; then
-            echo "Production: migrations only (no seed)."
-            supabase db push --db-url "$SUPABASE_DB_URL"
-          else
-            echo "Development: migrations + seed."
-            supabase db push --db-url "$SUPABASE_DB_URL" --include-seed
+
+          push() {
+            if [ "$IS_PRODUCTION" = "true" ]; then
+              supabase db push --db-url "$1"
+            else
+              supabase db push --db-url "$1" --include-seed
+            fi
+          }
+
+          # A Supavisor tenant lives on either the aws-0-* or aws-1-* pooler for
+          # the project's region. If the operator copied the wrong prefix the
+          # connection fails with "tenant/user ... not found", so try the URI
+          # as-is and fall back to the alternate prefix before giving up.
+          if out=$(push "$SUPABASE_DB_URL" 2>&1); then
+            printf '%s\n' "$out"
+            exit 0
           fi
+          printf '%s\n' "$out"
+
+          case "$SUPABASE_DB_URL" in
+            *"@aws-0-"*) ALT="${SUPABASE_DB_URL/@aws-0-/@aws-1-}" ;;
+            *"@aws-1-"*) ALT="${SUPABASE_DB_URL/@aws-1-/@aws-0-}" ;;
+            *)
+              echo "::error::supabase db push failed. Confirm SUPABASE_DB_URL is the Session pooler URI (IPv4, port 5432) with the correct DB password."
+              exit 1 ;;
+          esac
+
+          echo "::warning::Retrying against the alternate pooler host…"
+          push "$ALT"
 
       # ── Vercel config ──────────────────────────────────────────────────────
       - name: Validate Vercel project config
