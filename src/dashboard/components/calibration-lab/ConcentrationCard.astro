@@ -2,13 +2,13 @@
 import NumberField from '@/dashboard/components/ui/NumberField.astro'
 
 interface Props {
-  title: string
   idPrefix: string
+  defaultPct: number
   tag?: string
   tagVariant?: 'standard' | 'saturation'
 }
 
-const { title, idPrefix, tag, tagVariant = 'standard' } = Astro.props
+const { idPrefix, defaultPct, tag, tagVariant = 'standard' } = Astro.props
 
 const tagStyles: Record<string, string> = {
   standard: 'bg-blue-50 text-blue-700 ring-blue-100',
@@ -27,8 +27,19 @@ const tagStyles: Record<string, string> = {
     aria-hidden='true'
   ></div>
   <div class='p-5'>
-    <div class='mb-3 flex items-center justify-between'>
-      <h3 class='text-sm font-semibold text-slate-800'>{title}</h3>
+    <div class='mb-3 flex items-end justify-between gap-3'>
+      <div class='w-32'>
+        <label for={`${idPrefix}-pct`} class='ch-label'>Carga (%)</label>
+        <input
+          id={`${idPrefix}-pct`}
+          name={`${idPrefix}-pct`}
+          type='number'
+          step='0.01'
+          min='0.01'
+          value={defaultPct}
+          class='ch-input text-center'
+        />
+      </div>
       {
         tag && (
           <span

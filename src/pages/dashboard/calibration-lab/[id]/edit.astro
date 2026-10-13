@@ -63,6 +63,20 @@ import ConfirmDialog from '@/dashboard/components/ui/ConfirmDialog.astro'
 
     {/* Calibration */}
     <Card title='Curva de Calibración de Color' eyebrow='Edición' right='UNIDAD: CIELAB (D65/10°)'>
+      <div class='mb-4 rounded-lg bg-slate-50 p-3 ring-1 ring-slate-100'>
+        <div class='ch-label'>Origen de los datos</div>
+        <div class='flex flex-wrap gap-2'>
+          <label class='inline-flex cursor-pointer items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 has-[:checked]:border-blue-500 has-[:checked]:bg-blue-50 has-[:checked]:text-blue-700'>
+            <input type='radio' name='calibration-source' value='measured' class='accent-blue-600' />
+            Medido (colorímetro)
+          </label>
+          <label class='inline-flex cursor-pointer items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 has-[:checked]:border-amber-500 has-[:checked]:bg-amber-50 has-[:checked]:text-amber-700'>
+            <input type='radio' name='calibration-source' value='estimated' class='accent-amber-600' />
+            Estimado
+          </label>
+        </div>
+      </div>
+
       <div class='space-y-4'>
         {[0.5, 1.0, 2.0].map((pct) => {
           const prefix = pct === 0.5 ? 'calib-05' : pct === 1.0 ? 'calib-10' : 'calib-20'
@@ -72,8 +86,11 @@ import ConfirmDialog from '@/dashboard/components/ui/ConfirmDialog.astro'
             : 'bg-violet-50 text-violet-700 ring-violet-100'
           return (
             <div class='rounded-lg border border-slate-200 bg-white p-5'>
-              <div class='mb-3 flex items-center justify-between'>
-                <h3 class='text-sm font-semibold text-slate-800'>{pct}%</h3>
+              <div class='mb-3 flex items-end justify-between gap-3'>
+                <div class='w-32'>
+                  <label for={`${prefix}-pct`} class='ch-label'>Carga (%)</label>
+                  <input id={`${prefix}-pct`} type='number' step='0.01' min='0.01' value={pct} class='ch-input text-center' />
+                </div>
                 {tag && (
                   <span
                     class:list={[
@@ -229,21 +246,33 @@ import ConfirmDialog from '@/dashboard/components/ui/ConfirmDialog.astro'
           if (mb.provider_id) setVal('edit-provider', String(mb.provider_id))
         }, 200)
 
-        // Fill calibration data
+        // Provenance toggle
+        const src = mb.calibration_source === 'estimated' ? 'estimated' : 'measured'
+        const srcRadio = document.querySelector(
+          `input[name="calibration-source"][value="${src}"]`
+        ) as HTMLInputElement | null
+        if (srcRadio) srcRadio.checked = true
+
+        // Fill calibration data. Map by ORDER (sorted by concentration) so
+        // custom concentration values (not just 0.5/1/2%) load correctly.
         const calData = (mb.calibration_data ?? []) as Array<{
           letdown_percentage: number
           lab_l: number
           lab_a: number
           lab_b: number
         }>
-        for (const pt of calData) {
-          const prefix = pt.letdown_percentage === 0.5 ? 'calib-05'
-            : pt.letdown_percentage === 1.0 ? 'calib-10'
-            : 'calib-20'
-          setVal(`${prefix}-l`, String(pt.lab_l))
-          setVal(`${prefix}-a`, String(pt.lab_a))
-          setVal(`${prefix}-b`, String(pt.lab_b))
-        }
+        const rows = ['calib-05', 'calib-10', 'calib-20']
+        calData
+          .slice()
+          .sort((a, b) => a.letdown_percentage - b.letdown_percentage)
+          .forEach((pt, i) => {
+            const prefix = rows[i]
+            if (!prefix) return
+            setVal(`${prefix}-pct`, String(pt.letdown_percentage))
+            setVal(`${prefix}-l`, String(pt.lab_l))
+            setVal(`${prefix}-a`, String(pt.lab_a))
+            setVal(`${prefix}-b`, String(pt.lab_b))
+          })
       })
       .catch(() => {
         window.location.href = '/dashboard/calibration-lab'
@@ -259,6 +288,14 @@ import ConfirmDialog from '@/dashboard/components/ui/ConfirmDialog.astro'
       const providerIdRaw = val('edit-provider')
       const providerId = providerIdRaw ? Number(providerIdRaw) : null
 
+      const ROW_PREFIXES = ['calib-05', 'calib-10', 'calib-20']
+      const calibration = ROW_PREFIXES.map((prefix) => ({
+        letdown_percentage: num(`${prefix}-pct`),
+        lab_l: num(`${prefix}-l`),
+        lab_a: num(`${prefix}-a`),
+        lab_b: num(`${prefix}-b`)
+      }))
+
       const payload = {
         provider_id: Number.isFinite(providerId) ? providerId : null,
         product_name: val('edit-product-name').trim(),
@@ -267,15 +304,24 @@ import ConfirmDialog from '@/dashboard/components/ui/ConfirmDialog.astro'
         base_carrier_polymer: val('edit-polymer'),
         current_stock_kg: Number(val('edit-stock')) || 0,
         internal_notes: val('edit-notes').trim() || null,
-        calibration: [
-          { letdown_percentage: 0.5, lab_l: num('calib-05-l'), lab_a: num('calib-05-a'), lab_b: num('calib-05-b') },
-          { letdown_percentage: 1.0, lab_l: num('calib-10-l'), lab_a: num('calib-10-a'), lab_b: num('calib-10-b') },
-          { letdown_percentage: 2.0, lab_l: num('calib-20-l'), lab_a: num('calib-20-a'), lab_b: num('calib-20-b') }
-        ]
+        calibration_source:
+          (document.querySelector('input[name="calibration-source"]:checked') as HTMLInputElement | null)?.value === 'estimated'
+            ? 'estimated'
+            : 'measured',
+        calibration
       }
 
       if (!payload.product_name || !payload.supplier_sku || !payload.base_carrier_polymer) {
         showErr('El nombre del producto, SKU y polímero portador son obligatorios.')
+        return
+      }
+      const pcts = calibration.map((p) => p.letdown_percentage)
+      if (pcts.some((p) => !Number.isFinite(p) || p <= 0)) {
+        showErr('Las cargas (%) deben ser números mayores a 0.')
+        return
+      }
+      if (new Set(pcts).size !== pcts.length) {
+        showErr('Las tres cargas (%) deben ser distintas entre sí.')
         return
       }
       for (const pt of payload.calibration) {

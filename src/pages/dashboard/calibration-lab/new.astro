@@ -90,19 +90,32 @@ import CalibrationData from '@/dashboard/components/calibration-lab/CalibrationD
         base_carrier_polymer: str('base-carrier'),
         current_stock_kg: Number(str('stock-level')) || 0,
         internal_notes: str('internal-notes').trim() || null,
-        // Calibration curve — chip at 0.5 / 1 / 2% pigment loading in resin.
-        // The 1% is the typical "measured" anchor; 0.5% and 2% can be either
-        // measured or estimated from the anchor via the exponential model.
-        calibration_source: 'estimated' as 'estimated' | 'measured',
-        calibration: [
-          { letdown_percentage: 0.5, lab_l: num('calib-05-l'), lab_a: num('calib-05-a'), lab_b: num('calib-05-b') },
-          { letdown_percentage: 1.0, lab_l: num('calib-10-l'), lab_a: num('calib-10-a'), lab_b: num('calib-10-b') },
-          { letdown_percentage: 2.0, lab_l: num('calib-20-l'), lab_a: num('calib-20-a'), lab_b: num('calib-20-b') }
-        ]
+        // Provenance of the curve — read from the Medido/Estimado toggle.
+        calibration_source:
+          (document.querySelector('input[name="calibration-source"]:checked') as HTMLInputElement | null)?.value === 'estimated'
+            ? 'estimated'
+            : 'measured',
+        // Calibration curve — concentrations are editable (default 0.5/1/2%)
+        // so the lab can record whatever range they actually measured.
+        calibration: ROWS.map((r) => ({
+          letdown_percentage: effectivePct(r),
+          lab_l: num(`${r.prefix}-l`),
+          lab_a: num(`${r.prefix}-a`),
+          lab_b: num(`${r.prefix}-b`)
+        }))
       }
 
       if (!payload.product_name || !payload.supplier_sku || !payload.base_carrier_polymer) {
         showErr('El nombre del producto, SKU y polímero portador son obligatorios.')
+        return
+      }
+      const pcts = payload.calibration.map((p) => p.letdown_percentage)
+      if (pcts.some((p) => !Number.isFinite(p) || p <= 0)) {
+        showErr('Las cargas (%) deben ser números mayores a 0.')
+        return
+      }
+      if (new Set(pcts).size !== pcts.length) {
+        showErr('Las tres cargas (%) deben ser distintas entre sí.')
         return
       }
       for (const pt of payload.calibration) {
@@ -145,19 +158,24 @@ import CalibrationData from '@/dashboard/components/calibration-lab/CalibrationD
     // (100, 0, 0) — white resin chip.
     const TAU_DEFAULT = 1.5
     const S = (c: number) => 1 - Math.exp(-c / TAU_DEFAULT)
-    const S05 = S(0.5)
-    const S10 = S(1.0)
-    const S20 = S(2.0)
     const BASE_L = 100
     const BASE_A = 0
     const BASE_B = 0
 
-    // Fields keyed by their concentration.
-    const POINTS = [
-      { pct: 0.5, prefix: 'calib-05', s: S05 },
-      { pct: 1.0, prefix: 'calib-10', s: S10 },
-      { pct: 2.0, prefix: 'calib-20', s: S20 }
+    // Calibration rows. Concentrations are editable in the UI; these are
+    // only the defaults used when a row's concentration field is blank.
+    const ROWS = [
+      { prefix: 'calib-05', defaultPct: 0.5 },
+      { prefix: 'calib-10', defaultPct: 1.0 },
+      { prefix: 'calib-20', defaultPct: 2.0 }
     ] as const
+
+    // The concentration the operator typed for a row, falling back to the
+    // default when blank/invalid.
+    const effectivePct = (row: { prefix: string; defaultPct: number }): number => {
+      const v = numOrNaN(`${row.prefix}-pct`)
+      return Number.isFinite(v) && v > 0 ? v : row.defaultPct
+    }
 
     const estimateCurve = () => {
       const setVal = (id: string, v: number) => {
@@ -177,10 +195,10 @@ import CalibrationData from '@/dashboard/components/calibration-lab/CalibrationD
         // Collect anchor points (concentration, measured value) that are filled.
         // Uses numOrNaN — empty strings must count as "missing", not as 0.
         const anchors: Array<{ s: number; shift: number }> = []
-        for (const p of POINTS) {
+        for (const p of ROWS) {
           const val = numOrNaN(`${p.prefix}-${ch}`)
           if (Number.isFinite(val)) {
-            anchors.push({ s: p.s, shift: val - bases[ch] })
+            anchors.push({ s: S(effectivePct(p)), shift: val - bases[ch] })
           }
         }
         if (anchors.length === 0) {
@@ -195,18 +213,20 @@ import CalibrationData from '@/dashboard/components/calibration-lab/CalibrationD
         // impossible values (L* < 0 or > 100, a*/b* outside ±128) never
         // reach the DB — they usually indicate a badly-measured anchor
         // that produced an absurd masstone extrapolation.
-        for (const p of POINTS) {
+        for (const p of ROWS) {
           const val = numOrNaN(`${p.prefix}-${ch}`)
           if (!Number.isFinite(val)) {
-            let estimated = bases[ch] + masstoneShift * p.s
+            const pct = effectivePct(p)
+            const s = S(pct)
+            let estimated = bases[ch] + masstoneShift * s
             if (ch === 'l') {
               if (estimated < 0 || estimated > 100) {
-                clampWarnings.push(`L* al ${p.pct}% dio ${estimated.toFixed(2)} (fuera de rango) — revisá los chips medidos`)
+                clampWarnings.push(`L* al ${pct}% dio ${estimated.toFixed(2)} (fuera de rango) — revisá los chips medidos`)
                 estimated = Math.max(0, Math.min(100, estimated))
               }
             } else {
               if (estimated < -128 || estimated > 128) {
-                clampWarnings.push(`${ch.toUpperCase()}* al ${p.pct}% dio ${estimated.toFixed(2)} (fuera de rango) — revisá los chips medidos`)
+                clampWarnings.push(`${ch.toUpperCase()}* al ${pct}% dio ${estimated.toFixed(2)} (fuera de rango) — revisá los chips medidos`)
                 estimated = Math.max(-128, Math.min(128, estimated))
               }
             }

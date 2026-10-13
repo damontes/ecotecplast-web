@@ -3,21 +3,28 @@ import Card from '@/dashboard/components/ui/Card.astro'
 import ConcentrationCard from '@/dashboard/components/calibration-lab/ConcentrationCard.astro'
 ---
 
-<Card title='Curva de Calibración de Color' eyebrow='Curva de 3 puntos' right='UNIDAD: CIELAB (D65/10°)'>
+<Card title='Curva de Calibración de Color' eyebrow='3 puntos' right='UNIDAD: CIELAB (D65/10°)'>
+  {/* Data provenance — drives the `calibration_source` flag. Real
+      colorimeter readings should be marked "Medido"; the exponential
+      estimator output is "Estimado" and shows a warning badge in the UI. */}
+  <div class='mb-4 rounded-lg bg-slate-50 p-3 ring-1 ring-slate-100'>
+    <div class='ch-label'>Origen de los datos</div>
+    <div class='flex flex-wrap gap-2'>
+      <label class='inline-flex cursor-pointer items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 has-[:checked]:border-blue-500 has-[:checked]:bg-blue-50 has-[:checked]:text-blue-700'>
+        <input type='radio' name='calibration-source' value='measured' checked class='accent-blue-600' />
+        Medido (colorímetro)
+      </label>
+      <label class='inline-flex cursor-pointer items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 has-[:checked]:border-amber-500 has-[:checked]:bg-amber-50 has-[:checked]:text-amber-700'>
+        <input type='radio' name='calibration-source' value='estimated' class='accent-amber-600' />
+        Estimado
+      </label>
+    </div>
+  </div>
+
   <div class='space-y-4'>
-    <ConcentrationCard
-      title='Carga 0.5%'
-      idPrefix='calib-05'
-      tag='Carga Estándar'
-      tagVariant='standard'
-    />
-    <ConcentrationCard title='Carga 1% (medido)' idPrefix='calib-10' />
-    <ConcentrationCard
-      title='Carga 2%'
-      idPrefix='calib-20'
-      tag='Carga de Saturación'
-      tagVariant='saturation'
-    />
+    <ConcentrationCard idPrefix='calib-05' defaultPct={0.5} tag='Carga Estándar' tagVariant='standard' />
+    <ConcentrationCard idPrefix='calib-10' defaultPct={1.0} />
+    <ConcentrationCard idPrefix='calib-20' defaultPct={2.0} tag='Carga de Saturación' tagVariant='saturation' />
   </div>
 
   <div class='mt-5 flex items-start justify-between gap-3 rounded-lg bg-sky-50 p-4 ring-1 ring-sky-100'>
@@ -37,7 +44,7 @@ import ConcentrationCard from '@/dashboard/components/calibration-lab/Concentrat
         <line x1='12' y1='8' x2='12.01' y2='8'></line>
       </svg>
       <p class='text-xs italic text-sky-800'>
-        Ingresa el Lab medido de al menos <b>uno</b> de los tres puntos (0.5, 1 o 2%). Al presionar <b>Estimar faltantes</b>, el sistema calcula los puntos vacíos usando el modelo exponencial. Todos los valores quedan editables.
+        Las cargas son editables: midí al colorímetro sobre <b>fondo blanco opaco</b> y anotá la concentración real de cada chip (ej. 0.1 / 0.25 / 0.5%). Ingresá el Lab medido de al menos <b>uno</b> de los tres puntos y, si querés, usá <b>Estimar faltantes</b> para completar los demás. Marca <b>Medido</b> cuando las lecturas vengan del colorímetro.
       </p>
     </div>
     <button
