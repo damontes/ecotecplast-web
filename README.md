@@ -1,197 +1,140 @@
-# Ecotecplast
+# Ecotecplast ColorHub
 
-Sitio web corporativo de Ecotecplast, empresa especializada en aditivos para la industria del plástico con más de 20 años de experiencia.
+Private, admin-only industrial **color-matching** web app for a plastics
+manufacturer. Lab technicians use it to register masterbatches with their
+CIELAB calibration curves, run color matches against a target Lab value, and
+track match jobs per client.
+
+Given an inventory of masterbatches (pigment concentrates) and a target
+color, the app computes the **mix of each masterbatch** (at which %) needed to
+reach that color.
+
+> The corporate marketing site was removed — this repo is the ColorHub app
+> only. `/` redirects to `/login`.
 
 ## Stack
 
-- **Framework:** [Astro](https://astro.build) v3
-- **Estilos:** [Tailwind CSS](https://tailwindcss.com) v3
-- **Contenido:** MDX con colecciones de contenido
-- **Correo:** [Resend](https://resend.com)
-- **Despliegue:** [Vercel](https://vercel.com) (serverless)
-- **Fuentes:** Montserrat Variable via Fontsource
+- **Framework:** [Astro](https://astro.build) v7 (`output: 'server'`)
+- **Styling:** Tailwind CSS v3
+- **Auth + DB:** Supabase (Postgres + Auth), RLS-enforced multi-tenancy
+- **Match engine:** TypeScript port of a Python NumPy + SciPy SLSQP reference
+- **Deploy:** Vercel (adapter), Supabase migrations via GitHub Actions
+- **Tests:** Vitest
 
-## Estructura
+## Structure
 
 ```
 src/
-├── components/     # Componentes reutilizables
-├── content/        # Colecciones MDX (productos y procesos)
-├── images/         # Imágenes optimizadas con astro:assets
-├── layouts/        # Layouts de página
-├── lib/            # Utilidades (Resend, etc.)
-├── pages/          # Rutas del sitio
-│   ├── index.astro
-│   ├── aditivos.astro
-│   ├── contacto.astro
-│   ├── e-purge.astro
-│   ├── full-master-color.astro
-│   └── aviso-de-privacidad.astro
-└── const.ts        # Constantes del proyecto
+├── dashboard/            # Dashboard components + layout (SideRail, ui/*, matcher, calibration)
+├── lib/
+│   ├── match-engine/     # polyfit, minimize (Nelder-Mead), delta-e (CIE76 + CIEDE2000), matcher
+│   └── supabase/         # server/browser/admin clients, JWT verify, profile cache
+├── middleware.ts         # Verifies session, gates /dashboard/* to org admins
+├── pages/
+│   ├── index.astro       # Redirects to /login
+│   ├── login.astro       # Admin login
+│   ├── dashboard/        # color-matcher, simulator, calibration-lab, clients, references
+│   └── api/              # color-match, masterbatches, providers, clients, jobs, color-references, auth
+supabase/                 # config.toml, migrations/, seed*.sql
+tests/match-engine/       # Unit tests (source of truth for the algorithm)
 ```
 
-## Comandos
+## Local development (Supabase Docker container)
 
-| Comando | Acción |
-|---------|--------|
-| `pnpm dev` | Inicia servidor local en `localhost:4321` |
-| `pnpm build` | Compila el sitio para producción |
-| `pnpm preview` | Previsualiza la build localmente |
+The local database runs in Docker via the Supabase CLI (no Dockerfile needed).
+Ports are offset to **563xx** in `supabase/config.toml` so this stack can run
+alongside the other Supabase projects on the same machine.
 
-## Variables de entorno
+```bash
+brew install supabase/tap/supabase   # once
+pnpm install
 
-| Variable | Descripción |
-|----------|-------------|
-| `RESEND_API_KEY` | API key de Resend para envío de correos |
-| `PUBLIC_SUPABASE_URL` | URL del proyecto Supabase (ColorHub dashboard) |
-| `PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Clave publishable de Supabase (`sb_publishable_...`) — segura para el navegador |
-| `SUPABASE_SECRET_KEY` | Clave secret de Supabase (`sb_secret_...`) — solo servidor, nunca al cliente |
+pnpm supabase:start                  # boots the Docker stack
+pnpm supabase:reset                  # applies migrations + seed.sql
+pnpm dev                             # http://localhost:4321/login
+```
 
----
+Local connection values (already written to the gitignored `.env.local`;
+refresh from `pnpm supabase:status -o env` if you recreate the stack):
 
-## ColorHub Dashboard (Supabase)
+| Variable | Value |
+|---|---|
+| `PUBLIC_SUPABASE_URL` | `http://127.0.0.1:56321` |
+| `PUBLIC_SUPABASE_PUBLISHABLE_KEY` | `sb_publishable_...` (static local demo key) |
+| `SUPABASE_SECRET_KEY` | `sb_secret_...` (static local demo key) |
 
-The `/dashboard/*` section is a private, admin-only app for industrial color matching. It uses Supabase for storage + auth and a TypeScript port of the match engine at `src/lib/match-engine/`.
+Useful scripts: `pnpm supabase:status`, `pnpm supabase:stop`.
+Studio: `http://127.0.0.1:56323`.
 
-### Two-project workflow (dev + prod)
+### Hosted projects (dev + prod)
 
-Supabase branching is a Pro-tier feature. On free tier we get the same isolation by running **two separate free projects**:
+Supabase branching is Pro-only, so dev and prod are **two separate free
+projects**. `.env` points at hosted DEV; `.env.local` overrides it locally.
 
 | Project | Purpose | Env target |
 |---|---|---|
-| `ecotecplast-colorhub-dev` | schema iteration, seed data, throwaway users | local `.env` |
-| `ecotecplast-colorhub-prod` | real inventory, real match history | Vercel environment variables |
+| `ecotecplast-colorhub-dev` | schema iteration, seed data | `.env` |
+| `ecotecplast-colorhub-prod` | real inventory + history | Vercel env (Production) |
 
-Both use the identical migrations from `supabase/migrations/`. You only touch prod after a change has been proven on dev.
+Both run the identical migrations in `supabase/migrations/`. Prod is seeded
+with `supabase/seed_references.sql` (RAL reference library) only — real
+providers/masterbatches/clients are added through the app UI.
 
-### One-time setup
+Create an admin user, then promote them (per project):
 
-1. **Install the Supabase CLI:**
-   ```bash
-   brew install supabase/tap/supabase
-   supabase login
-   ```
-
-2. **Create two projects** in the Supabase Dashboard: `ecotecplast-colorhub-dev` and `ecotecplast-colorhub-prod` (both free tier).
-
-3. **Bootstrap the DEV project** — this is where you'll actually work:
-   ```bash
-   supabase link --project-ref <DEV-project-ref>
-   supabase db push
-   ```
-   Then paste `supabase/seed.sql` in the DEV project's SQL Editor. This
-   is the **full demo seed**: fake providers, sample masterbatches with
-   clean calibration curves, sample clients, and the reference-color library.
-
-4. **Bootstrap the PROD project** — do this once, then avoid it:
-   ```bash
-   supabase link --project-ref <PROD-project-ref>
-   supabase db push
-   ```
-   Then paste `supabase/seed_references.sql` — **NOT** `seed.sql` — in
-   the PROD SQL Editor. That file loads a curated ~35 RAL Classic colors
-   as the reference library. Real providers, masterbatches, and clients
-   are added by admins through the app UI so the DB never mixes demo
-   data with production data.
-
-   **Pantone is not bundled** because their color values are licensed —
-   customers who need Pantone matching should measure their own chips
-   and add them via the *Colores de Referencia* UI under a custom
-   palette name (`Pantone-Cliente-XYZ`, etc.).
-
-5. **Point your `.env.local` at DEV** (values from DEV project → Settings → Data API):
-   ```
-   PUBLIC_SUPABASE_URL=https://<DEV-ref>.supabase.co
-   PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
-   SUPABASE_SECRET_KEY=sb_secret_...
-   ```
-
-6. **Set PROD credentials on Vercel** (Project → Settings → Environment Variables, scope = *Production*):
-   Same three variables, but with the PROD project's values.
-
-7. **Create an admin user** in each project (Dashboard → Authentication → Users → Add user), then promote them:
-   ```sql
-   update public.profiles set is_admin = true where email = 'you@example.com';
-   ```
-
-### Daily development
-
-```bash
-pnpm dev
-```
-Visit **http://localhost:4321/login**. You're talking to DEV — safe to break, safe to reseed, safe to `truncate` tables.
-
-### Shipping a schema change
-
-```bash
-# 1. Iterate against DEV using Supabase Studio SQL editor or execute_sql via MCP.
-# 2. When happy, generate a migration file:
-supabase db diff -f my_change_name --schema public
-# 3. Commit the SQL file. Verify DEV is still clean:
-supabase link --project-ref <DEV-ref>
-supabase db push
-# 4. Promote to PROD:
-supabase link --project-ref <PROD-ref>
-supabase db push
+```sql
+-- add via Dashboard -> Authentication -> Users, then:
+insert into organization_members (org_id, user_id, role)
+select 1, id, 'admin' from auth.users where email = 'you@example.com'
+on conflict do nothing;
 ```
 
-`supabase db push` **only runs new migrations** — it never runs `seed.sql`, and the migrations themselves are additive (no `drop`s unless you write one). Existing prod data is safe.
+## Environment variables
 
-Rule of thumb: **the CLI is linked to whichever project you `supabase link`d last.** Check with `cat supabase/.temp/project-ref` before running any command that writes.
+See `.env.example`. Never expose `SUPABASE_SECRET_KEY` to the browser.
 
-### Testing the match engine
+| Variable | Scope |
+|---|---|
+| `PUBLIC_SUPABASE_URL` | public (build-time inlined) |
+| `PUBLIC_SUPABASE_PUBLISHABLE_KEY` | public (build-time inlined) |
+| `SUPABASE_SECRET_KEY` | server-only (admin client) |
 
-Automated unit tests live in [tests/match-engine/](tests/match-engine/) and are the **source of truth** for the algorithm's expected behavior. Run them with:
+## Testing
 
 ```bash
 pnpm test          # one-shot
-pnpm test:watch    # re-run on file change
+pnpm test:watch    # re-run on change
+pnpm build         # Astro + TypeScript check
 ```
 
-They cover:
-- Numerical primitives (`polyfit2`, `polyval2`, `deltaE76`, `deltaE2000` against Sharma-Wu-Dalal reference table)
-- The full recipe matrix (single-pigment, two-pigment, boundary cases, out-of-gamut)
-- Tolerance parameter behavior (strict / standard / commercial)
-- Invariants (determinism, 4% budget, no negatives)
-- Performance floor (20 runs on 5 MBs < 5 s)
+`tests/match-engine/` is the source of truth for the algorithm: numerical
+primitives (`polyfit2`, `deltaE2000` vs the Sharma-Wu-Dalal table), the recipe
+matrix (single/two-pigment, boundaries, out-of-gamut), tolerance behavior,
+invariants (determinism, 4 % budget) and a performance floor.
 
-Manual smoke test in the UI (matches Group A1 from the tests):
-- Baseline `L=95, a=0, b=0`, Target `L=75, a=12, b=-18`, tolerance **Strict** → PASS with 1.0% Blue + 0.5% Red
-- Baseline `L=95, a=0, b=0`, Target `L=30, a=55, b=60`, tolerance **Strict** → FAIL, reachable substitutes suggested from the reference library
+## Deploy (GitHub Actions)
 
-Each match creates a row in `match_history` with an auto-generated `job_identifier` (`EP-YYYY-NNNN`). To review them: go to **/dashboard/clients**, click a client, and see all their jobs with date-range and status filters on the detail page.
+`.github/workflows/deploy.yml` deploys **Supabase first, then Vercel**, scoped
+by branch: `main` → the `production` GitHub environment, anything else → the
+`development` environment. `vercel.json` disables Vercel's own Git auto-deploy
+so the workflow is the only deployer.
 
-### Access model
+Configure per environment (Settings → Environments):
 
-| Table | Anonymous | Org member | Org admin |
-|---|---|---|---|
-| `organizations` | ❌ | Read own orgs | — |
-| `providers`, `masterbatches`, `clients` | ❌ | Read (org-scoped) | Read + Write |
-| `calibration_data` | ❌ | Read (via masterbatch org) | Read + Write |
-| `match_history` | ❌ | Read (org-scoped), insert own | Read + Write |
-| `color_references` | ❌ | Read (global) | Read + Write |
-| `profiles` | ❌ | Read own | Read + update all |
+- **Variables:** `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`, `SUPABASE_PROJECT_REF`, `APP_URL`
+- **Secrets:** `VERCEL_TOKEN`, `SUPABASE_ACCESS_TOKEN`, `SUPABASE_DB_URL`
+  (Session pooler URI, IPv4), `SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SECRET_KEY`
 
-RLS is enforced at the database level; the `service_role` bypasses RLS and is only used server-side.
+Pipeline: validate → resolve keys → `db push` (dev also seeds) → set Auth
+redirect URLs → upsert Vercel env → create deployment and wait for `READY`.
 
-### Ongoing schema changes
+## Match engine & domain constraints
 
-```bash
-# 1. Iterate freely against your dev DB (or Supabase Studio SQL editor).
-# 2. When happy, generate a new migration:
-supabase db diff -f my_change_name --schema public
-# 3. Review the SQL, commit, and:
-supabase db push
-```
+- 2nd-degree polyfit per masterbatch/channel over 3 calibration points (0.5/1.0/2.0 %)
+- Nelder-Mead with structured + random restarts; bounds `[0, 4]` per MB
+- ΔE: CIE76 during search, CIEDE2000 for the pass/fail gate (`≤ 1.0`)
+- Total pigment budget 4 % by mass; recipe rows `< 0.01 %` dropped
+- Deterministic: same input → same recipe
+- Carrier polymer filters eligible MBs (PE-carrier MBs don't disperse into PP)
 
----
-
-## Multi-tenancy (Organizations)
-
-Each organization (tenant) manages its own clients, providers, inventory, calibration data, and match history in isolation. `color_references` stays global — shared across all orgs.
-
-**On deploy:** A default org (`Ecotecplast`) is created and all existing data is backfilled to it.
-
-**On signup:** The `handle_new_user()` trigger creates a personal org for each new user and adds them as admin. The first step of onboarding will be naming the org.
-
-**RLS:** Policies filter by `is_org_member(organization_id)` / `is_org_admin(organization_id)`. The server-side `service_role` bypasses RLS.
+See [AGENTS.md](AGENTS.md) for the multi-tenant data model and scaling notes.

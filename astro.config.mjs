@@ -1,8 +1,9 @@
 import { defineConfig } from 'astro/config'
-import mdx from '@astrojs/mdx'
 import vercel from '@astrojs/vercel'
-import sitemap from '@astrojs/sitemap'
 
+// ColorHub is a private, admin-only color-matching app (the /dashboard/* and
+// /login routes). The corporate marketing site was removed.
+//
 // https://astro.build/config
 export default defineConfig({
   output: 'server',
@@ -14,7 +15,5 @@ export default defineConfig({
       enabled: true
     }
   }),
-  site: 'https://ecotecplast.com',
-  integrations: [mdx(), sitemap()],
   base: '/'
 })

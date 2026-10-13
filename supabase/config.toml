@@ -1,17 +1,27 @@
 # Set at link time via `supabase link --project-ref <ref>`.
 project_id = "ecotecplast-colorhub"
 
+# Local ports are offset into the 563xx range so this stack can run alongside
+# the other Supabase projects on this machine:
+#   knowledge-base-rag-prototype -> 543xx (defaults)
+#   poly-trace                   -> 553xx
 [api]
 enabled = true
-port = 54321
+port = 56321
 schemas = ["public", "graphql_public"]
 extra_search_path = ["public", "extensions"]
 max_rows = 1000
 
 [db]
-port = 54322
-shadow_port = 54320
-major_version = 15
+port = 56322
+shadow_port = 56320
+# Match the Postgres major already used by the other local stacks (and the
+# images cached locally), which is also what hosted Supabase runs.
+major_version = 17
+
+[db.pooler]
+enabled = true
+port = 56329
 
 [db.seed]
 # Auto-run on `supabase db reset` (local + --linked). Default now points
@@ -22,12 +32,22 @@ sql_paths = ["./seed.sql"]
 
 [studio]
 enabled = true
-port = 54323
+port = 56323
+
+[local_smtp]
+enabled = true
+port = 56324
+smtp_port = 56325
+pop3_port = 56326
+
+[analytics]
+enabled = true
+port = 56327
 
 [auth]
 enabled = true
 site_url = "http://localhost:4321"
-additional_redirect_urls = ["https://ecotecplast.com"]
+additional_redirect_urls = ["http://localhost:4321", "https://ecotecplast.com"]
 # JWT access token lifetime. Max allowed by Supabase is 604800 (7 days).
 # 86400 (24h) is a balance: operators don't hit re-login during a shift,
 # and the token is refreshed transparently via the refresh_token every

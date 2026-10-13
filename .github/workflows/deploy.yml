@@ -1,0 +1,278 @@
+name: Supabase + Vercel Deploy
+
+# Deploy pipeline (backend first, then frontend):
+#   1. Apply pending Supabase migrations (DEV also loads the seed).
+#   2. Point hosted Supabase Auth at the deployed app URL.
+#   3. Push the runtime env to Vercel via the REST API.
+#   4. Create a Vercel deployment from the pushed commit and wait for READY.
+#
+# This project has no Edge Functions and no auth email templates, so those
+# steps from the reference pipeline are intentionally omitted.
+#
+# No `supabase link`: newer Supabase versions 403 /api-keys?reveal=true, so
+# migrations use `db push --db-url` and Auth uses the Management API with
+# `--project-ref`/REST.
+#
+# Vercel Git auto-deploy is disabled in vercel.json (`git.deploymentEnabled:
+# false`) so this workflow is the only deployer.
+#
+# Required GitHub configuration. Create two Environments
+# (Settings -> Environments): `development` and `production` — each holding its
+# own Supabase values. The Vercel values are shared, so they live once at repo
+# level (Settings -> Secrets and variables -> Actions).
+#
+#   Repo-level variables (same for both environments):
+#     VERCEL_ORG_ID          - .vercel/project.json orgId (or team settings id)
+#     VERCEL_PROJECT_ID      - .vercel/project.json projectId
+#   Repo-level secrets:
+#     VERCEL_TOKEN           - Vercel token that can reach the project
+#
+#   Per-environment variables (`development` uses the dev project, `production`
+#   the prod project):
+#     SUPABASE_PROJECT_REF   - hosted project ref
+#     APP_URL                - public URL, e.g. https://colorhub.vercel.app
+#                              (optional; defaults to https://<vercel-name>.vercel.app)
+#   Per-environment secrets:
+#     SUPABASE_ACCESS_TOKEN  - Management API token (DB write + Auth config)
+#     SUPABASE_DB_URL        - hosted Postgres Session pooler URI (IPv4, port 5432)
+#     SUPABASE_PUBLISHABLE_KEY - sb_publishable_* (or legacy anon key)
+#     SUPABASE_SECRET_KEY    - sb_secret_* (or legacy service_role key)
+#
+# PUBLIC_SUPABASE_URL is derived from SUPABASE_PROJECT_REF — do not add it.
+
+on:
+  push:
+    branches: [main, development]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-${{ github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    # main -> production environment; everything else -> development.
+    environment: ${{ github.ref == 'refs/heads/main' && 'production' || 'development' }}
+    env:
+      VERCEL_ORG_ID: ${{ vars.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ vars.VERCEL_PROJECT_ID }}
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF || secrets.SUPABASE_PROJECT_REF }}
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+      APP_URL: ${{ vars.APP_URL }}
+      IS_PRODUCTION: ${{ github.ref == 'refs/heads/main' }}
+      REPO_ID: ${{ github.event.repository.id }}
+      BRANCH: ${{ github.ref_name }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: supabase/setup-cli@v1
+        with:
+          # Pinned: newer CLI releases broke `db push` against hosted projects.
+          # Bump deliberately after verifying a deploy.
+          version: 2.117.0
+
+      - name: Validate config
+        run: |
+          set -euo pipefail
+          missing=0
+          for name in VERCEL_ORG_ID VERCEL_PROJECT_ID VERCEL_TOKEN SUPABASE_PROJECT_REF SUPABASE_ACCESS_TOKEN SUPABASE_DB_URL; do
+            if [ -z "${!name:-}" ]; then
+              echo "::error::$name is empty. Add it under Settings -> Secrets and variables -> Actions."
+              missing=1
+            fi
+          done
+          [ "$missing" = "0" ] || exit 1
+          # GitHub runners have no IPv6; the direct db.<ref>.supabase.co host is
+          # IPv6-only. Require the Session pooler (IPv4, port 5432).
+          case "$SUPABASE_DB_URL" in
+            *"@db."*|*"@db:"*)
+              echo "::error::SUPABASE_DB_URL uses the direct connection (IPv6-only), which GitHub runners cannot reach. Use the Session pooler URI: postgresql://postgres.<ref>:<password>@aws-0-<region>.pooler.supabase.com:5432/postgres"
+              exit 1 ;;
+          esac
+          echo "Deploying Supabase project: $SUPABASE_PROJECT_REF"
+
+      # Supabase masks the secret key with reveal=false, so prefer the values
+      # provided as secrets; fall back to the Management API for the public key.
+      - name: Resolve Supabase keys
+        run: |
+          set -euo pipefail
+          URL="https://$SUPABASE_PROJECT_REF.supabase.co"
+          PUBLISHABLE="${{ secrets.SUPABASE_PUBLISHABLE_KEY }}"
+          SECRET="${{ secrets.SUPABASE_SECRET_KEY }}"
+
+          is_valid() {
+            case "$1" in
+              eyJ*) return 0 ;;
+              sb_publishable_*|sb_secret_*) return 0 ;;
+              *) return 1 ;;
+            esac
+          }
+
+          if [ -z "$PUBLISHABLE" ]; then
+            code=$(curl -s -o /tmp/keys.json -w "%{http_code}" \
+              -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+              "https://api.supabase.com/v1/projects/$SUPABASE_PROJECT_REF/api-keys?reveal=false")
+            if [ "$code" = "200" ]; then
+              PUBLISHABLE=$(jq -r '.[] | select((.prefix == "sb_publishable") or (.name == "publishable") or (.type == "publishable")) | .api_key' /tmp/keys.json | head -1)
+              [ -n "$PUBLISHABLE" ] || PUBLISHABLE=$(jq -r '.[] | select(.type == "legacy" and .name == "anon") | .api_key' /tmp/keys.json | head -1)
+            fi
+            rm -f /tmp/keys.json
+          fi
+
+          if ! is_valid "$PUBLISHABLE"; then PUBLISHABLE=""; fi
+          if ! is_valid "$SECRET"; then SECRET=""; fi
+          if [ -z "$PUBLISHABLE" ] || [ -z "$SECRET" ]; then
+            echo "::error::Missing Supabase keys. Add SUPABASE_PUBLISHABLE_KEY and SUPABASE_SECRET_KEY (Project Settings -> API keys) as environment secrets."
+            exit 1
+          fi
+          {
+            echo "PUBLIC_SUPABASE_URL=$URL"
+            echo "PUBLIC_SUPABASE_PUBLISHABLE_KEY=$PUBLISHABLE"
+            echo "SUPABASE_SECRET_KEY=$SECRET"
+          } >> "$GITHUB_ENV"
+          echo "Resolved Supabase URL and keys."
+
+      # Applies only pending migrations; applied ones are recorded remotely.
+      # Development also loads the (idempotent) seed so the env has demo
+      # orgs/users/batches. Production never seeds.
+      - name: Apply migrations
+        run: |
+          set -euo pipefail
+          if [ "$IS_PRODUCTION" = "true" ]; then
+            echo "Production: migrations only (no seed)."
+            supabase db push --db-url "$SUPABASE_DB_URL"
+          else
+            echo "Development: migrations + seed."
+            supabase db push --db-url "$SUPABASE_DB_URL" --include-seed
+          fi
+
+      # ── Vercel config ──────────────────────────────────────────────────────
+      - name: Validate Vercel project config
+        run: |
+          set -euo pipefail
+          if [[ "$VERCEL_ORG_ID" == team_* ]]; then
+            echo "TEAM_QS=teamId=$VERCEL_ORG_ID" >> "$GITHUB_ENV"
+            TEAM_QUERY="?teamId=$VERCEL_ORG_ID"
+          else
+            echo "TEAM_QS=" >> "$GITHUB_ENV"
+            TEAM_QUERY=""
+          fi
+          STATUS=$(curl -s -o /tmp/vc-project.json -w "%{http_code}" \
+            -H "Authorization: Bearer $VERCEL_TOKEN" \
+            "https://api.vercel.com/v9/projects/$VERCEL_PROJECT_ID$TEAM_QUERY")
+          echo "Vercel API check for project: HTTP $STATUS"
+          if [ "$STATUS" != "200" ]; then
+            echo "::error::Vercel cannot load the project (HTTP $STATUS). Check VERCEL_TOKEN scope and VERCEL_ORG_ID / VERCEL_PROJECT_ID."
+            cat /tmp/vc-project.json
+            exit 1
+          fi
+
+      - name: Resolve app URL
+        run: |
+          set -euo pipefail
+          if [ -z "${APP_URL:-}" ]; then
+            NAME=$(jq -r '.name' /tmp/vc-project.json)
+            APP_URL="https://$NAME.vercel.app"
+            echo "APP_URL not set; defaulting to $APP_URL"
+          fi
+          echo "APP_URL=$APP_URL" >> "$GITHUB_ENV"
+
+      # Point hosted Auth at the deployed app so login/session redirects
+      # resolve correctly.
+      - name: Configure Auth redirect URLs
+        run: |
+          set -euo pipefail
+          jq -n --arg site "$APP_URL" \
+            '{ site_url: $site, uri_allow_list: ($site + "/**,http://localhost:4321/**") }' > /tmp/auth.json
+          code=$(curl -s -o /tmp/auth-resp.json -w "%{http_code}" \
+            -X PATCH \
+            -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+            -H "Content-Type: application/json" \
+            "https://api.supabase.com/v1/projects/$SUPABASE_PROJECT_REF/config/auth" \
+            -d @/tmp/auth.json)
+          if [ "$code" != "200" ]; then
+            echo "::warning::Auth config update returned HTTP $code (continuing)."
+            cat /tmp/auth-resp.json || true
+          else
+            echo "Auth Site URL + redirect allow-list set to $APP_URL"
+          fi
+
+      - name: Set Vercel env (API)
+        run: |
+          set -euo pipefail
+          if [ "$IS_PRODUCTION" = "true" ]; then
+            TARGETS='["production"]'
+          else
+            TARGETS='["development","preview"]'
+          fi
+          # Vercel forbids duplicate keys on overlapping targets: delete any of
+          # OUR entries for a key, then recreate cleanly.
+          upsert() {
+            local key="$1" value="$2" type="$3"
+            local body response overlap_ids id
+            curl -s -H "Authorization: Bearer $VERCEL_TOKEN" \
+              "https://api.vercel.com/v10/projects/$VERCEL_PROJECT_ID/env?$TEAM_QS" \
+              -o /tmp/envs.json
+            overlap_ids=$(jq -r --arg k "$key" --argjson t "$TARGETS" \
+              '[.envs[] | select(.key == $k and ([.target[] as $x | ($t | index($x))] | any)) | .id] | .[]' /tmp/envs.json)
+            for id in $overlap_ids; do
+              curl -s -X DELETE "https://api.vercel.com/v10/projects/$VERCEL_PROJECT_ID/env/$id?$TEAM_QS" \
+                -H "Authorization: Bearer $VERCEL_TOKEN" -o /dev/null
+            done
+            body=$(jq -n --arg k "$key" --arg v "$value" --argjson t "$TARGETS" --arg ty "$type" \
+              '{key:$k, value:$v, target:$t, type:$ty}')
+            response=$(curl -s -X POST "https://api.vercel.com/v10/projects/$VERCEL_PROJECT_ID/env?$TEAM_QS" \
+              -H "Authorization: Bearer $VERCEL_TOKEN" -H "Content-Type: application/json" -d "$body")
+            if ! printf '%s' "$response" | jq -e '(.created.id or .created.key) or (.id or .key)' > /dev/null 2>&1; then
+              echo "::error::Vercel env upsert failed for $key: $response"
+              exit 1
+            fi
+          }
+          # PUBLIC_* are inlined by Astro at build time -> plain.
+          upsert PUBLIC_SUPABASE_URL "$PUBLIC_SUPABASE_URL" plain
+          upsert PUBLIC_SUPABASE_PUBLISHABLE_KEY "$PUBLIC_SUPABASE_PUBLISHABLE_KEY" plain
+          # Server-only -> sensitive.
+          upsert SUPABASE_SECRET_KEY "$SUPABASE_SECRET_KEY" sensitive
+
+      # ── Vercel deploy ──────────────────────────────────────────────────────
+      # No Vercel CLI: a project-scoped token cannot resolve the CLI account
+      # scope, so env/deploy endpoints are called directly with the REST API.
+      - name: Create Vercel deployment and wait
+        run: |
+          set -euo pipefail
+          NAME=$(jq -r '.name' /tmp/vc-project.json)
+          PAYLOAD=$(jq -n --arg name "$NAME" --argjson repo "$REPO_ID" --arg ref "$BRANCH" \
+            '{name:$name, gitSource:{type:"github", repoId:$repo, ref:$ref}}')
+          if [ "$IS_PRODUCTION" = "true" ]; then
+            PAYLOAD=$(echo "$PAYLOAD" | jq '. + {target:"production"}')
+          fi
+          # forceNew=1 skips Vercel's build cache (prevents stale build output).
+          RESP=$(curl -s -X POST "https://api.vercel.com/v13/deployments?forceNew=1&$TEAM_QS" \
+            -H "Authorization: Bearer $VERCEL_TOKEN" -H "Content-Type: application/json" -d "$PAYLOAD")
+          DPL_ID=$(echo "$RESP" | jq -r '.id')
+          DPL_URL=$(echo "$RESP" | jq -r '.url // ""')
+          if [ -z "$DPL_ID" ] || [ "$DPL_ID" = "null" ]; then
+            echo "::error::Vercel deployment creation failed:"
+            echo "$RESP"
+            exit 1
+          fi
+          echo "Deployment created: $DPL_ID -> https://$DPL_URL"
+          for i in $(seq 1 90); do
+            STATE=$(curl -s -H "Authorization: Bearer $VERCEL_TOKEN" \
+              "https://api.vercel.com/v13/deployments/$DPL_ID?$TEAM_QS" | jq -r '.readyState')
+            echo "deployment state: $STATE"
+            case "$STATE" in
+              READY)
+                echo "::notice::Deployed: https://$DPL_URL"
+                exit 0 ;;
+              ERROR|CANCELED)
+                echo "::error::Deployment $STATE: $DPL_ID"
+                exit 1 ;;
+            esac
+            sleep 10
+          done
+          echo "::error::Timed out waiting for deployment $DPL_ID"
+          exit 1
